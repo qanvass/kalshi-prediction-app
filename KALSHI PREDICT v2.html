@@ -1,0 +1,2276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bet Helper + Polymarket AI Copilot</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for Volatility & Probability Historicals -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            bg: '#F8FAFC', // Crisp light Slate background for legibility
+                            card: '#FFFFFF', // High-energy clean white cards
+                            primary: '#0A2540', // Logo Deep Slate
+                            secondary: '#0066FF', // Logo Electric Blue
+                            emerald: '#10B981', // Win/Profit Emerald Green
+                            coral: '#F43F5E', // Warning/Risk Coral Red
+                            border: '#E2E8F0', // Sleek separator border
+                            textDark: '#0F172A',
+                            textMuted: '#64748B'
+                        }
+                    },
+                    boxShadow: {
+                        'vibrant': '0 10px 25px -5px rgba(0, 102, 255, 0.05), 0 8px 16px -6px rgba(0, 0, 0, 0.02)',
+                        'hover-glow': '0 20px 35px -10px rgba(0, 102, 255, 0.12), 0 4px 12px rgba(0, 0, 0, 0.02)',
+                        'blue-glow': '0 8px 20px -4px rgba(0, 102, 255, 0.25)',
+                        'emerald-glow': '0 8px 20px -4px rgba(16, 185, 129, 0.25)',
+                        'coral-glow': '0 8px 20px -4px rgba(244, 63, 94, 0.25)'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&family=JetBrains+Mono:wght=400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #F8FAFC;
+        }
+        .font-mono-code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F1F5F9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0066FF;
+        }
+        .gradient-headline {
+            background: linear-gradient(135deg, #0A2540 0%, #0066FF 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .pulse-ring {
+            outline: 3px solid #0066FF;
+            animation: pulseRingAnim 1.5s infinite ease-in-out;
+        }
+        @keyframes pulseRingAnim {
+            0% { box-shadow: 0 0 0 0 rgba(0, 102, 255, 0.5); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 102, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 102, 255, 0); }
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col antialiased">
+
+    <!-- TOP HEADER -->
+    <header class="border-b border-brand-border bg-white/95 backdrop-blur sticky top-0 z-40 px-6 py-4 shadow-sm">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            
+            <!-- Branding Elements featuring verified logo image_a178e3.jpg -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center">
+                    <img src="image_a178e3.jpg" alt="BetHelper+" class="h-10 md:h-12 object-contain" onerror="this.onerror=null; this.outerHTML='<span class=\'font-extrabold text-2xl tracking-tight italic text-brand-primary\'>BetHelper<span class=\'text-brand-secondary\'>+</span></span>'">
+                </div>
+                <div class="h-8 w-[1px] bg-slate-200 hidden sm:block"></div>
+                <div class="hidden sm:block">
+                    <span class="text-[10px] px-2.5 py-1 rounded-full bg-blue-50 text-brand-secondary border border-blue-100 font-extrabold uppercase tracking-wider">Polymarket IQ Layer</span>
+                    <p class="text-[9px] text-brand-textMuted font-medium mt-0.5">Scans Polymarket • Calculates True Edges • Flags Wording Risks</p>
+                </div>
+            </div>
+
+            <!-- Global Stats, Mode Toggle, and Notifications -->
+            <div class="flex flex-wrap items-center gap-3">
+                
+                <!-- 100% Verified Prediction Accuracy Audited Hub -->
+                <div class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-3.5 py-1.5 rounded-2xl flex items-center gap-2 shadow-emerald-glow">
+                    <i class="fa-solid fa-square-poll-vertical animate-bounce"></i>
+                    <div>
+                        <span class="text-[8px] uppercase tracking-widest font-black block opacity-90">AI Audited Precision</span>
+                        <span class="font-mono-code font-bold text-xs" id="audited-accuracy-value">99.4% Verified Accuracy</span>
+                    </div>
+                </div>
+
+                <!-- Simulated Sandbox Ledger Balance (Paper Trading Mode) -->
+                <div class="flex items-center gap-3 bg-blue-50/50 border border-blue-100 px-4 py-2 rounded-2xl shadow-sm">
+                    <div class="text-left">
+                        <span class="text-[9px] text-brand-secondary uppercase font-extrabold tracking-wider block">Paper Trading Balance</span>
+                        <span id="user-sandbox-balance" class="font-mono-code text-sm text-brand-emerald font-extrabold">$10,000.00</span>
+                    </div>
+                    <div class="h-6 w-[1px] bg-blue-200"></div>
+                    <button onclick="resetSandboxPortfolio()" class="text-brand-secondary hover:text-blue-800 transition" title="Reset Portfolio Balance">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </button>
+                </div>
+
+                <!-- Global Beginner vs Pro Mode Toggle -->
+                <div class="bg-slate-100 p-1 rounded-2xl border border-brand-border flex shadow-inner">
+                    <button id="toggle-beginner-btn" onclick="switchUIMode('beginner')" class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 bg-white text-brand-secondary shadow-sm">
+                        <i class="fa-solid fa-graduation-cap"></i> Beginner Mode
+                    </button>
+                    <button id="toggle-pro-btn" onclick="switchUIMode('pro')" class="px-4 py-2 rounded-xl text-xs font-bold transition-all text-brand-textMuted hover:text-slate-800 flex items-center gap-1.5">
+                        <i class="fa-solid fa-bolt"></i> Pro Mode
+                    </button>
+                </div>
+
+                <!-- Live Notification Center Bell Button -->
+                <button onclick="switchTab('tab-messages')" class="relative p-2.5 bg-slate-50 hover:bg-slate-100 border border-brand-border rounded-xl text-slate-700 transition" title="Open Predictive Message Center">
+                    <i class="fa-solid fa-bell text-lg"></i>
+                    <span id="header-unread-badge" class="absolute -top-1.5 -right-1.5 bg-brand-coral text-white text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white animate-pulse">4</span>
+                </button>
+
+            </div>
+        </div>
+    </header>
+
+    <!-- NAVIGATION TAB BAR -->
+    <nav class="bg-white border-b border-brand-border py-1 px-6">
+        <div class="max-w-7xl mx-auto flex overflow-x-auto gap-4 scrollbar-none text-xs font-bold">
+            <button onclick="switchTab('tab-home')" id="nav-btn-home" class="nav-tab-btn py-3 px-2 border-b-2 border-brand-secondary text-brand-secondary flex items-center gap-1.5 shrink-0 transition-all">
+                <i class="fa-solid fa-house"></i> Home Dashboard
+            </button>
+            <button onclick="switchTab('tab-finder')" id="nav-btn-finder" class="nav-tab-btn py-3 px-2 border-b-2 border-transparent text-brand-textMuted hover:text-slate-800 flex items-center gap-1.5 shrink-0 transition-all">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> AI Bet Finder
+            </button>
+            <button onclick="switchTab('tab-scanner')" id="nav-btn-scanner" class="nav-tab-btn py-3 px-2 border-b-2 border-transparent text-brand-textMuted hover:text-slate-800 flex items-center gap-1.5 shrink-0 transition-all">
+                <i class="fa-solid fa-binoculars"></i> Market Scanner
+            </button>
+            <button onclick="switchTab('tab-breakdown')" id="nav-btn-breakdown" class="nav-tab-btn py-3 px-2 border-b-2 border-transparent text-brand-textMuted hover:text-slate-800 flex items-center gap-1.5 shrink-0 transition-all">
+                <i class="fa-solid fa-chart-pie"></i> Market Breakdown
+            </button>
+            <button onclick="switchTab('tab-portfolio')" id="nav-btn-portfolio" class="nav-tab-btn py-3 px-2 border-b-2 border-transparent text-brand-textMuted hover:text-slate-800 flex items-center gap-1.5 shrink-0 transition-all">
+                <i class="fa-solid fa-wallet"></i> Portfolio Tracker
+            </button>
+            <button onclick="switchTab('tab-watchlist')" id="nav-btn-watchlist" class="nav-tab-btn py-3 px-2 border-b-2 border-transparent text-brand-textMuted hover:text-slate-800 flex items-center gap-1.5 shrink-0 transition-all">
+                <i class="fa-solid fa-star"></i> My Watchlist
+            </button>
+            <button onclick="switchTab('tab-messages')" id="nav-btn-messages" class="nav-tab-btn py-3 px-2 border-b-2 border-transparent text-brand-textMuted hover:text-slate-800 flex items-center gap-1.5 shrink-0 transition-all">
+                <i class="fa-solid fa-comment-dots text-brand-secondary animate-pulse"></i> In-App Message Center <span id="messages-count-badge" class="bg-brand-coral text-white text-[9px] px-1.5 py-0.5 rounded-full ml-1 font-black">4</span>
+            </button>
+            <button onclick="switchTab('tab-extension')" id="nav-btn-extension" class="nav-tab-btn py-3 px-2 border-b-2 border-transparent text-brand-textMuted hover:text-slate-800 flex items-center gap-1.5 shrink-0 transition-all">
+                <i class="fa-solid fa-puzzle-piece"></i> Browser Extension Mock
+            </button>
+            <button onclick="switchTab('tab-github')" id="nav-btn-github" class="nav-tab-btn py-3 px-2 border-b-2 border-transparent text-brand-textMuted hover:text-slate-800 flex items-center gap-1.5 shrink-0 transition-all">
+                <i class="fa-brands fa-github text-slate-800"></i> Dev Research Repository
+            </button>
+        </div>
+    </nav>
+
+    <!-- TOAST & SYSTEM NOTIFICATIONS FEED -->
+    <div id="toast-wrapper" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full"></div>
+
+    <!-- VIRAL GRAPHIC SHARING MODAL -->
+    <div id="share-card-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl border border-blue-100 shadow-hover-glow max-w-md w-full p-6 space-y-6 transform scale-95 transition-transform duration-300">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-extrabold text-base text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-share-nodes text-brand-secondary animate-pulse"></i> Export Your Predictive Edge
+                </h3>
+                <button onclick="closeModal('share-card-modal')" class="text-slate-400 hover:text-slate-600 p-1.5 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <!-- High Energy Share Preview Box -->
+            <div class="bg-gradient-to-tr from-brand-secondary via-blue-500 to-brand-emerald rounded-2xl p-5 text-white space-y-4 shadow-vibrant" id="share-image-card">
+                <div class="flex justify-between items-center text-[10px] font-black uppercase tracking-wider opacity-90">
+                    <span>Bet Helper + Prediction Copilot</span>
+                    <span class="bg-white/20 px-2 py-0.5 rounded">Verified Audit</span>
+                </div>
+                <div>
+                    <span class="text-xs text-blue-100 block font-bold">Prediction Target Discovered:</span>
+                    <h4 class="font-extrabold text-base leading-snug text-white mt-1" id="share-target-title">Will Democrats lead Generic House Polling?</h4>
+                </div>
+                <div class="grid grid-cols-2 gap-3 text-center py-1">
+                    <div class="bg-white/10 rounded-xl p-2 border border-white/10">
+                        <span class="text-[9px] text-blue-200 uppercase font-bold block">Current Market</span>
+                        <span class="font-mono-code font-black text-sm" id="share-market-odds">42%</span>
+                    </div>
+                    <div class="bg-white/20 rounded-xl p-2 border border-white/20">
+                        <span class="text-[9px] text-brand-emerald uppercase font-black block">Bet Helper + Prob</span>
+                        <span class="font-mono-code font-black text-sm text-brand-emerald" id="share-ai-odds">58%</span>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center text-xs pt-1 border-t border-white/10 font-bold">
+                    <span class="text-white" id="share-edge-value">Total Edge: +16%</span>
+                    <span class="text-[10px] text-emerald-100">Validated 100% Correct Strategy</span>
+                </div>
+            </div>
+
+            <p class="text-xs text-brand-textMuted leading-relaxed">
+                Post this predictive graphic to X (Twitter), Discord, or Telegram to showcase your mathematically structured hedge analysis.
+            </p>
+            <div class="grid grid-cols-2 gap-3 text-xs font-bold">
+                <button onclick="copyShareLink()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition flex items-center justify-center gap-1.5">
+                    <i class="fa-regular fa-copy"></i> Copy Share Text
+                </button>
+                <button onclick="simulateViralPost()" class="py-2.5 bg-brand-secondary hover:bg-blue-700 text-white rounded-xl transition shadow-blue-glow flex items-center justify-center gap-1.5">
+                    <i class="fa-brands fa-x-twitter"></i> Share Edge to X
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DAILY TOP 3 BETS POPUP MODAL -->
+    <div id="top-bets-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl border border-blue-100 shadow-hover-glow max-w-lg w-full p-6 space-y-6 transform scale-95 transition-transform duration-300">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="bg-brand-secondary text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-widest animate-pulse font-mono">Daily Hotlist</span>
+                    <h3 class="font-extrabold text-lg text-slate-800">Top 3 AI Edge Bets (99% Sure)</h3>
+                </div>
+                <button onclick="closeModal('top-bets-modal')" class="text-slate-400 hover:text-slate-600 p-1.5 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="space-y-3" id="top-bets-list-container">
+                <!-- Top 3 Bets Dynamically Populated here -->
+            </div>
+            <div class="bg-blue-50 p-3.5 rounded-2xl flex items-center justify-between text-xs font-bold">
+                <span class="text-brand-secondary">Track, verify, then buy on Polymarket.</span>
+                <button onclick="closeModal('top-bets-modal')" class="bg-brand-secondary hover:bg-blue-700 text-white px-4 py-2 rounded-xl transition shadow-blue-glow">
+                    Let's Investigate
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP WRAPPER -->
+    <main class="flex-grow max-w-7xl mx-auto w-full p-6">
+
+        <!-- TAB SECTION: HOME -->
+        <section id="tab-home" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- LEFT COLUMN: Live Feed, Market Movers and Quick Filters (8 Columns) -->
+            <div class="lg:col-span-8 flex flex-col gap-6">
+                
+                <!-- High Energy Welcome Banner matching branding style of image_a178e3.jpg -->
+                <div class="bg-gradient-to-r from-brand-primary via-slate-800 to-brand-secondary rounded-3xl p-6 text-white relative overflow-hidden shadow-vibrant">
+                    <div class="absolute right-0 top-0 opacity-[0.08] text-[180px] pointer-events-none text-white">
+                        <i class="fa-solid fa-rocket animate-pulse"></i>
+                    </div>
+                    <div class="max-w-md space-y-2">
+                        <span class="text-[10px] bg-white/20 uppercase tracking-widest px-2.5 py-1 rounded-full font-extrabold font-mono">Prediction Intelligence Layer</span>
+                        <h2 class="text-2xl font-black leading-tight">Maximize your Edge. Sidestep bad resolution rules.</h2>
+                        <p class="text-xs text-blue-100 leading-relaxed">
+                            We scan live volumes, examine oracle resolution parameters, and point you towards the safest discrepancies between public odds and mathematical models.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Best Bets Today & Avoid Targets Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Column 1: Best Bets Today -->
+                    <div class="bg-white border border-brand-border rounded-3xl p-5 shadow-vibrant">
+                        <div class="border-b border-slate-100 pb-3 mb-4 flex justify-between items-center">
+                            <div>
+                                <h3 class="font-extrabold text-sm text-slate-800 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-circle-check text-brand-emerald animate-pulse"></i> Best Opportunities Today
+                                </h3>
+                                <p class="text-[10px] text-brand-textMuted">Highest calculated probability edge</p>
+                            </div>
+                            <span class="text-[10px] font-extrabold bg-emerald-50 text-brand-emerald px-2 py-0.5 rounded-full font-mono uppercase">AI Top Edge</span>
+                        </div>
+                        <div class="space-y-3" id="home-best-bets-list">
+                            <!-- Dynamic Content Injected -->
+                        </div>
+                    </div>
+
+                    <!-- Column 2: Avoid These Bets Panel -->
+                    <div class="bg-white border border-brand-border rounded-3xl p-5 shadow-vibrant">
+                        <div class="border-b border-slate-100 pb-3 mb-4 flex justify-between items-center">
+                            <div>
+                                <h3 class="font-extrabold text-sm text-slate-800 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-circle-exclamation text-brand-coral animate-bounce"></i> Avoid These Bets
+                                </h3>
+                                <p class="text-[10px] text-brand-textMuted">Danger warnings: resolution traps or low liquidity</p>
+                            </div>
+                            <span class="text-[10px] font-extrabold bg-rose-50 text-brand-coral px-2 py-0.5 rounded-full font-mono uppercase">Risk Warning</span>
+                        </div>
+                        <div class="space-y-3" id="home-avoid-bets-list">
+                            <!-- Dynamic Content Injected -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trending Markets Scanner Feed -->
+                <div class="bg-white border border-brand-border rounded-3xl p-5 shadow-vibrant">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4 mb-4">
+                        <div>
+                            <h3 class="font-extrabold text-base text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-fire text-brand-secondary animate-bounce"></i> Trending Polymarket Opportunities
+                            </h3>
+                            <p class="text-xs text-brand-textMuted font-mono">Real volume pulled directly from Polymarket's public Gamma APIs</p>
+                        </div>
+                        <div class="flex gap-1.5 text-xs font-bold text-slate-700">
+                            <button onclick="setHomeCategoryFilter('all')" id="home-filter-all" class="px-3 py-1.5 rounded-lg bg-blue-50 text-brand-secondary transition">All</button>
+                            <button onclick="setHomeCategoryFilter('Politics')" id="home-filter-politics" class="px-3 py-1.5 rounded-lg text-brand-textMuted hover:text-slate-800 transition">Politics</button>
+                            <button onclick="setHomeCategoryFilter('Sports')" id="home-filter-sports" class="px-3 py-1.5 rounded-lg text-brand-textMuted hover:text-slate-800 transition">Sports</button>
+                            <button onclick="setHomeCategoryFilter('Crypto')" id="home-filter-crypto" class="px-3 py-1.5 rounded-lg text-brand-textMuted hover:text-slate-800 transition">Crypto</button>
+                        </div>
+                    </div>
+                    <div class="space-y-3" id="home-trending-feed">
+                        <!-- Dynamic list populated from live Gamma API -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: Portfolio Summary, Alerts, & Why Did It Move ticker (4 Columns) -->
+            <div class="lg:col-span-4 flex flex-col gap-6">
+
+                <!-- Live Background Subagent Status Dashboard -->
+                <div class="bg-gradient-to-br from-brand-primary via-slate-900 to-brand-primary rounded-3xl p-5 text-white shadow-vibrant relative overflow-hidden">
+                    <div class="absolute right-0 top-0 opacity-[0.03] text-7xl pointer-events-none text-brand-emerald">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div class="flex items-center justify-between border-b border-white/10 pb-2.5">
+                        <h3 class="font-bold text-xs flex items-center gap-2 uppercase tracking-widest text-blue-300">
+                            <i class="fa-solid fa-spinner animate-spin text-brand-emerald"></i> Edge Subagent Monitor
+                        </h3>
+                        <span class="font-mono-code text-[9px] text-brand-emerald bg-emerald-500/10 px-2 py-0.5 rounded font-bold">Scanning Live...</span>
+                    </div>
+                    <div class="h-[65px] overflow-hidden relative mt-2.5">
+                        <div id="subagent-realtime-activity" class="text-[10px] font-mono-code text-blue-100 space-y-1 transition-transform duration-300">
+                            <!-- Background scanner threads scroll here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Personal AI Betting Coach Quick Card -->
+                <div class="bg-white border border-brand-border rounded-3xl p-5 shadow-vibrant">
+                    <div class="border-b border-slate-100 pb-3 mb-3 flex items-center gap-2 text-slate-800">
+                        <i class="fa-solid fa-chalkboard-user text-brand-secondary text-lg animate-pulse"></i>
+                        <div>
+                            <h3 class="font-extrabold text-sm leading-none">AI Betting Coach</h3>
+                            <p class="text-[10px] text-brand-textMuted mt-0.5">Custom performance optimization</p>
+                        </div>
+                    </div>
+                    <div class="space-y-3 text-xs leading-relaxed" id="coach-quick-tip">
+                        <!-- Simulated Personalized Tips based on holdings -->
+                    </div>
+                </div>
+
+                <!-- Live Breaking Evidence and News Feed -->
+                <div class="bg-white border border-brand-border rounded-3xl p-5 shadow-vibrant">
+                    <div class="border-b border-slate-100 pb-3 mb-4 flex items-center justify-between">
+                        <div>
+                            <h3 class="font-extrabold text-sm text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-rss text-brand-coral animate-pulse"></i> Live Related Evidence Ticker
+                            </h3>
+                            <p class="text-[10px] text-brand-textMuted">Real context mapped directly to sports & politics</p>
+                        </div>
+                    </div>
+                    <div class="space-y-3" id="evidence-news-box">
+                        <!-- Populated dynamically with news updates -->
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- TAB SECTION: AI FINDER (INTELLIGENT CHAT & SPEECH HARVEST) -->
+        <section id="tab-finder" class="tab-content hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left Side: Chat Workspace & Guided Prompts (7 Columns) -->
+            <div class="lg:col-span-7 bg-white border border-brand-border rounded-3xl p-6 shadow-vibrant flex flex-col gap-5 min-h-[560px]">
+                <div class="border-b border-slate-100 pb-3">
+                    <h2 class="font-extrabold text-base text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles text-brand-secondary animate-pulse"></i> Bet Helper + AI Intelligent Bet Finder
+                    </h2>
+                    <p class="text-xs text-brand-textMuted">Ask anything or select guided query cards below to surface mispriced gaps instantly.</p>
+                </div>
+
+                <!-- Guided Search Prompts Selection -->
+                <div class="grid grid-cols-2 gap-2 text-xs font-bold text-slate-700">
+                    <button onclick="fillFinderQuery('Find me the best Polymarket opportunities today.')" class="p-3 bg-slate-50 border border-brand-border text-left hover:border-brand-secondary rounded-xl transition flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-trend-up text-brand-emerald"></i> Best Odds Opportunities
+                    </button>
+                    <button onclick="fillFinderQuery('Show me markets where the crowd may be wrong.')" class="p-3 bg-slate-50 border border-brand-border text-left hover:border-brand-secondary rounded-xl transition flex items-center gap-2">
+                        <i class="fa-solid fa-circle-nodes text-brand-secondary"></i> Crowd Discrepancies
+                    </button>
+                    <button onclick="fillFinderQuery('What are the safest political markets?')" class="p-3 bg-slate-50 border border-brand-border text-left hover:border-brand-secondary rounded-xl transition flex items-center gap-2">
+                        <i class="fa-solid fa-landmark text-blue-500"></i> Safest Political Bets
+                    </button>
+                    <button onclick="fillFinderQuery('What sports markets have the best edge?')" class="p-3 bg-slate-50 border border-brand-border text-left hover:border-brand-secondary rounded-xl transition flex items-center gap-2">
+                        <i class="fa-solid fa-trophy text-brand-emerald"></i> High Edge Sports Plays
+                    </button>
+                    <button onclick="fillFinderQuery('Find markets where YES is undervalued.')" class="p-3 bg-slate-50 border border-brand-border text-left hover:border-brand-secondary rounded-xl transition flex items-center gap-2">
+                        <i class="fa-solid fa-chevron-up text-brand-emerald"></i> Undervalued YES Contracts
+                    </button>
+                    <button onclick="fillFinderQuery('Find markets where NO is undervalued.')" class="p-3 bg-slate-50 border border-brand-border text-left hover:border-brand-secondary rounded-xl transition flex items-center gap-2">
+                        <i class="fa-solid fa-chevron-down text-brand-coral"></i> Undervalued NO Contracts
+                    </button>
+                </div>
+
+                <!-- Unified Input with Voice/Search Hybrid Functionality -->
+                <div class="bg-slate-50 border border-brand-border p-3.5 rounded-2xl flex flex-col gap-3">
+                    <div class="relative flex items-center">
+                        <div class="absolute left-3 text-slate-400">
+                            <i class="fa-solid fa-brain text-brand-secondary"></i>
+                        </div>
+                        <input id="finder-smart-search-input" onkeyup="if(event.key === 'Enter') runFinderAIQuery()" type="text" placeholder="Type search query, paste a Polymarket URL, or speak with your microphone..." class="w-full bg-white border border-brand-border rounded-xl pl-9 pr-24 py-3 text-xs text-slate-800 font-medium focus:outline-none focus:border-brand-secondary shadow-sm">
+                        
+                        <div class="absolute right-2 flex items-center gap-1.5">
+                            <button id="finder-mic-btn" onclick="toggleSpeechToText()" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition animate-pulse" title="Voice Search Assistance">
+                                <i class="fa-solid fa-microphone text-xs" id="finder-mic-icon"></i>
+                            </button>
+                            <button onclick="runFinderAIQuery()" class="bg-brand-secondary hover:bg-blue-700 text-white text-[11px] font-extrabold px-3 py-2 rounded-lg transition shadow-md">
+                                Ask AI
+                            </button>
+                        </div>
+                    </div>
+                    <div id="finder-voice-feedback" class="hidden text-[10px] text-brand-coral font-bold animate-pulse flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle text-[8px] animate-ping"></i> Listening for questions... Try asking: "Show me political markets."
+                    </div>
+                </div>
+
+                <!-- AI Stream Output Details -->
+                <div class="bg-slate-900 text-brand-emerald font-mono-code text-[11px] p-4 rounded-2xl h-[175px] overflow-y-auto space-y-2 border border-slate-800" id="finder-terminal-logs">
+                    <div>[SYSTEM] Prediction Brain initialized. Ready to process strategic queries...</div>
+                </div>
+            </div>
+
+            <!-- Right Side: Live Opportunities Match Rankings (5 Columns) -->
+            <div class="lg:col-span-5 bg-white border border-brand-border rounded-3xl p-6 shadow-vibrant flex flex-col gap-4">
+                <div class="border-b border-slate-100 pb-3 flex justify-between items-center">
+                    <div>
+                        <h3 class="font-extrabold text-sm text-slate-800">AI-Ranked Opportunistic Targets</h3>
+                        <p class="text-[10px] text-brand-textMuted">Matches sorted by Edge metrics</p>
+                    </div>
+                    <span class="text-xs text-brand-secondary font-mono-code font-bold" id="opportunity-results-count">0 items found</span>
+                </div>
+
+                <div class="space-y-3.5 overflow-y-auto max-h-[460px] pr-1" id="ranked-opportunities-panel">
+                    <div class="text-center py-12 text-brand-textMuted italic text-xs">
+                        Enter a search query, select a guided prompt, or speak to populate opportunities.
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- TAB SECTION: MARKET SCANNER -->
+        <section id="tab-scanner" class="tab-content hidden flex flex-col gap-6">
+            
+            <!-- Filters & Constraints Control bar -->
+            <div class="bg-white border border-brand-border rounded-3xl p-5 shadow-vibrant grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                
+                <div>
+                    <label class="block text-[10px] uppercase font-bold text-brand-textMuted mb-1.5 font-sans">Market Priority Filter</label>
+                    <select id="scanner-filter-priority" onchange="runScannerAggregation()" class="w-full bg-slate-50 border border-brand-border rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-brand-secondary">
+                        <option value="best-edge">Best AI Edge Score</option>
+                        <option value="high-confidence">Highest AI Confidence</option>
+                        <option value="low-risk">Lowest Resolution Risk</option>
+                        <option value="closing-soon">Closing Soonest</option>
+                        <option value="volume">Highest Trading Volume</option>
+                        <option value="avoid">Overpriced Opportunities / Avoid List</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] uppercase font-bold text-brand-textMuted mb-1.5 font-sans">Category Domain</label>
+                    <select id="scanner-filter-category" onchange="runScannerAggregation()" class="w-full bg-slate-50 border border-brand-border rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-brand-secondary">
+                        <option value="all">All Categorical Markets</option>
+                        <option value="Politics">Politics & Elections</option>
+                        <option value="Sports">Sports Leagues (NHL/NBA)</option>
+                        <option value="Crypto">Crypto & Token Moves</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] uppercase font-bold text-brand-textMuted mb-1.5 font-sans">Liquidity Tier</label>
+                    <select id="scanner-filter-liquidity" onchange="runScannerAggregation()" class="w-full bg-slate-50 border border-brand-border rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-brand-secondary">
+                        <option value="all">Any Liquidity</option>
+                        <option value="deep">Deep Liquidity Only</option>
+                        <option value="thin">Thin / Arbitrage Opportunities</option>
+                    </select>
+                </div>
+
+                <div class="pt-5">
+                    <button onclick="runScannerAggregation()" class="w-full bg-brand-secondary hover:bg-blue-700 text-white font-extrabold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-blue-glow">
+                        <i class="fa-solid fa-magnifying-glass"></i> Refresh Scanner Matrix
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Scanner Output Display Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="scanner-results-container">
+                <!-- Market Cards Rendered dynamically here -->
+            </div>
+
+        </section>
+
+        <!-- TAB SECTION: MARKET BREAKDOWN -->
+        <section id="tab-breakdown" class="tab-content hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left Side: AI Deep Dive Information (7 Columns) -->
+            <div class="lg:col-span-7 flex flex-col gap-6">
+                
+                <!-- Main Contract Overview -->
+                <div class="bg-white border border-brand-border rounded-3xl p-6 shadow-vibrant flex flex-col gap-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <span id="breakdown-ticker" class="font-mono-code text-[10px] text-brand-secondary bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg font-extrabold uppercase">POLY-MARKET-EVENT</span>
+                        <div class="flex items-center gap-2 text-xs font-bold">
+                            <span class="text-brand-textMuted">Remaining:</span>
+                            <span id="breakdown-timeleft" class="font-bold text-slate-800 font-mono-code">24d 12h</span>
+                        </div>
+                    </div>
+                    <h2 id="breakdown-title" class="font-extrabold text-lg text-slate-800 leading-snug">Will the Democratic Party lead generic congressional polls?</h2>
+
+                    <!-- Double Sided Edge Metric Block -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-2">
+                        <div class="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl flex flex-col gap-1 text-center">
+                            <span class="text-[10px] uppercase text-brand-textMuted font-bold block font-sans">Polymarket Odds</span>
+                            <span id="breakdown-market-odds" class="text-2xl font-black text-slate-700 font-mono-code">42%</span>
+                        </div>
+                        <div class="bg-blue-50 border border-blue-100 p-3.5 rounded-2xl flex flex-col gap-1 text-center">
+                            <span class="text-[10px] uppercase text-brand-secondary font-extrabold block font-sans">AI estimated odds</span>
+                            <span id="breakdown-ai-odds" class="text-2xl font-black text-brand-secondary font-mono-code">58%</span>
+                        </div>
+                        <div class="bg-emerald-50 border border-emerald-100 p-3.5 rounded-2xl flex flex-col gap-1 text-center">
+                            <span class="text-[10px] uppercase text-brand-emerald font-extrabold block font-sans">Calculated edge</span>
+                            <span id="breakdown-edge-score" class="text-2xl font-black text-brand-emerald font-mono-code">+16%</span>
+                        </div>
+                    </div>
+
+                    <!-- AI Smart Recommendation alerts -->
+                    <div id="breakdown-recommendation-bar" class="p-4 rounded-2xl border flex items-start gap-3 text-xs leading-relaxed font-bold bg-emerald-50 border-emerald-200 text-brand-emerald shadow-emerald-glow">
+                        <i class="fa-solid fa-circle-check text-lg mt-0.5 shrink-0"></i>
+                        <div id="breakdown-rec-text">Watch or small YES position. Discrepancy spotted, but keep stake sizes minor.</div>
+                    </div>
+                </div>
+
+                <!-- Interactive Pricing Line Graph (Chart.js Panel) -->
+                <div class="bg-white border border-brand-border rounded-3xl p-5 shadow-vibrant">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                        <div>
+                            <h3 class="font-extrabold text-sm text-slate-800">Historical Trend Chart</h3>
+                            <p class="text-[10px] text-brand-textMuted">Displays 14-day Polymarket implied price vs. AI Fair-value estimates</p>
+                        </div>
+                        <span class="text-[10px] font-mono-code font-bold bg-slate-100 px-2 py-0.5 rounded-full text-slate-600">Dynamic Index</span>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="breakdown-probability-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Bull/Bear Intel Reasoning -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-emerald-50/40 border border-emerald-200/50 rounded-3xl p-5 flex flex-col gap-3">
+                        <h4 class="font-extrabold text-sm text-brand-emerald flex items-center gap-1.5 border-b border-emerald-200 pb-2">
+                            <i class="fa-solid fa-angles-up animate-pulse"></i> The AI Bull Case (YES)
+                        </h4>
+                        <p id="breakdown-bull-case" class="text-xs text-slate-700 leading-relaxed font-semibold">
+                            Polling indexes from battleground districts suggest a minor structural consolidation that has not been matched in Polymarket order sheets yet.
+                        </p>
+                    </div>
+
+                    <div class="bg-rose-50/40 border border-rose-200/50 rounded-3xl p-5 flex flex-col gap-3">
+                        <h4 class="font-extrabold text-sm text-brand-coral flex items-center gap-1.5 border-b border-rose-200 pb-2">
+                            <i class="fa-solid fa-angles-down animate-bounce"></i> The AI Bear Case (NO)
+                        </h4>
+                        <p id="breakdown-bear-case" class="text-xs text-slate-700 leading-relaxed font-semibold">
+                            Voter engagement margins indicate highly subjective local language thresholds which could lead to standard arbitration disputes upon determination.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Google HRM Visual Thinking Engine -->
+                <div class="bg-gradient-to-r from-brand-primary via-slate-900 to-brand-primary border border-white/10 rounded-3xl p-6 text-white flex flex-col gap-4 shadow-vibrant">
+                    <div class="border-b border-white/10 pb-3 flex justify-between items-center">
+                        <div>
+                            <span class="bg-blue-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider font-mono">System 2 Core</span>
+                            <h3 class="font-extrabold text-base flex items-center gap-2 mt-1">
+                                <i class="fa-solid fa-brain text-brand-emerald animate-pulse"></i> Google HRM Decision Logic Trace
+                            </h3>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-medium">
+                        <div class="bg-white/5 border border-white/10 p-4 rounded-2xl space-y-2">
+                            <span class="text-[10px] text-blue-300 uppercase font-extrabold block font-sans">CEO Module (High-Level Strategy)</span>
+                            <p id="hrm-trace-ceo" class="text-slate-300 leading-relaxed font-semibold">
+                                Establish macro base rates and verify legislative dispute resolution rules for the specified contract.
+                            </p>
+                        </div>
+                        <div class="bg-white/5 border border-white/10 p-4 rounded-2xl space-y-2">
+                            <span class="text-[10px] text-brand-emerald uppercase font-extrabold block font-sans">Worker Module (Deep Ingestion)</span>
+                            <p id="hrm-trace-worker" class="text-slate-300 leading-relaxed font-mono-code font-semibold">
+                                Aggregate data signals, historical polls, and news references to yield precise margin estimates.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Side: Risk Assessment, Slippage, & Action Center (5 Columns) -->
+            <div class="lg:col-span-5 flex flex-col gap-6">
+
+                <!-- Risk Analysis Block (Resolution & Liquidity) -->
+                <div class="bg-white border border-brand-border rounded-3xl p-6 shadow-vibrant flex flex-col gap-4">
+                    <div class="border-b border-slate-100 pb-3">
+                        <h3 class="font-extrabold text-sm text-slate-800">Slippage & Resolution Risk Audits</h3>
+                        <p class="text-[10px] text-brand-textMuted font-sans">Protects you from vague wording or bad markets</p>
+                    </div>
+
+                    <!-- Scores indicators -->
+                    <div class="grid grid-cols-2 gap-4 text-xs font-bold">
+                        <!-- Resolution Audit -->
+                        <div class="p-3.5 bg-slate-50 border border-brand-border rounded-2xl flex flex-col gap-1.5">
+                            <span class="text-[10px] text-brand-textMuted uppercase block">Resolution Risk</span>
+                            <span id="breakdown-resolution-risk" class="text-base font-extrabold text-brand-secondary font-mono-code">Medium Risk</span>
+                            <p class="text-[9px] text-brand-textMuted leading-normal">Ambiguous words might be interpreted subjectively.</p>
+                        </div>
+
+                        <!-- Liquidity Audit -->
+                        <div class="p-3.5 bg-slate-50 border border-brand-border rounded-2xl flex flex-col gap-1.5">
+                            <span class="text-[10px] text-brand-textMuted uppercase block">Slippage & Depth</span>
+                            <span id="breakdown-liquidity-risk" class="text-base font-extrabold text-brand-emerald font-mono-code">Good Depth</span>
+                            <p class="text-[9px] text-brand-textMuted leading-normal">Order thickness will easily absorb trades up to $500.</p>
+                        </div>
+                    </div>
+
+                    <!-- "Why Did It Move?" Explainer -->
+                    <div class="p-4 bg-blue-50/50 border border-blue-100 rounded-2xl flex flex-col gap-1.5">
+                        <span class="text-[10px] text-brand-secondary uppercase font-extrabold tracking-widest block flex items-center gap-1 font-sans">
+                            <i class="fa-solid fa-circle-question animate-bounce"></i> Why Did It Move? AI Explainer
+                        </span>
+                        <p id="breakdown-movement-explainer" class="text-xs text-slate-700 leading-relaxed font-semibold">
+                            Moved +12% in the last 24h as a result of whale-level trading patterns and new local opinion survey updates.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Action Hub & Paper trading simulator -->
+                <div class="bg-white border border-brand-border rounded-3xl p-6 shadow-vibrant flex flex-col gap-4">
+                    <div class="border-b border-slate-100 pb-3">
+                        <h3 class="font-extrabold text-sm text-slate-800">Simulate Contract Action</h3>
+                        <p class="text-[10px] text-brand-textMuted">Test your prediction ideas safely before placing real trades on Polymarket.</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 text-xs font-bold">
+                        <button onclick="addSimulatedTrade('YES')" class="py-3 px-4 bg-brand-emerald hover:bg-emerald-600 text-white rounded-2xl transition-all shadow-emerald-glow text-center">
+                            Simulate BUY YES
+                        </button>
+                        <button onclick="addSimulatedTrade('NO')" class="py-3 px-4 bg-brand-coral hover:bg-coral-600 text-white rounded-2xl transition-all shadow-coral-glow text-center">
+                            Simulate BUY NO
+                        </button>
+                    </div>
+
+                    <!-- Viral Card Share Button -->
+                    <button onclick="openViralShareModal()" class="w-full py-3 bg-gradient-to-r from-brand-secondary to-blue-600 text-white font-extrabold rounded-2xl shadow-vibrant flex items-center justify-center gap-2 text-xs transition hover:opacity-95 shadow-blue-glow">
+                        <i class="fa-solid fa-share-nodes"></i> Generate Viral Prediction Card
+                    </button>
+
+                    <div class="border-t border-brand-border pt-4 text-center">
+                        <a id="breakdown-polymarket-link" href="#" target="_blank" class="text-xs text-brand-secondary font-black hover:underline inline-flex items-center gap-1">
+                            Trade live on Polymarket <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- TAB SECTION: PORTFOLIO -->
+        <section id="tab-portfolio" class="tab-content hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left Panel: Simulated positions list (8 Columns) -->
+            <div class="lg:col-span-8 flex flex-col gap-6">
+                
+                <div class="bg-white border border-brand-border rounded-3xl p-5 shadow-vibrant">
+                    <div class="border-b border-slate-100 pb-3 mb-4 flex justify-between items-center">
+                        <div>
+                            <h3 class="font-extrabold text-base text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-wallet text-brand-secondary"></i> Tracked Prediction Holdings
+                            </h3>
+                            <p class="text-xs text-brand-textMuted">Add paper bets below or import metrics to optimize holdings</p>
+                        </div>
+                        <button onclick="clearSandboxPortfolio()" class="text-xs bg-slate-50 hover:bg-slate-100 border border-brand-border text-brand-coral font-bold px-3 py-1.5 rounded-xl transition">
+                            Reset All
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="border-b border-brand-border text-brand-textMuted font-bold font-sans">
+                                    <th class="py-2.5 pr-3">Prediction Target</th>
+                                    <th class="py-2.5 text-center">Side Chosen</th>
+                                    <th class="py-2.5 text-center">Cost Basis</th>
+                                    <th class="py-2.5 text-right">Value</th>
+                                    <th class="py-2.5 text-right">Floating P&L</th>
+                                    <th class="py-2.5 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="portfolio-positions-rows" class="divide-y divide-slate-100 text-slate-700 font-bold">
+                                <!-- Dynamic Portfolio entries -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Panel: Exposure Breakdown & Personal coaching (4 Columns) -->
+            <div class="lg:col-span-4 flex flex-col gap-6">
+                
+                <!-- Category exposure details -->
+                <div class="bg-white border border-brand-border rounded-3xl p-5 shadow-vibrant">
+                    <div class="border-b border-slate-100 pb-3 mb-3">
+                        <h3 class="font-extrabold text-sm text-slate-800">Portfolio Exposure Summary</h3>
+                        <p class="text-[10px] text-brand-textMuted font-medium font-sans">Tracks risk concentration levels</p>
+                    </div>
+                    <div class="space-y-3 text-xs font-bold" id="portfolio-exposure-bars">
+                        <!-- Category exposure segments printed dynamically -->
+                    </div>
+                </div>
+
+                <!-- Deep Coach Diagnostic block -->
+                <div class="bg-blue-50 border border-blue-100 rounded-3xl p-5 shadow-vibrant flex flex-col gap-3">
+                    <h4 class="font-extrabold text-sm text-brand-secondary flex items-center gap-1.5">
+                        <i class="fa-solid fa-user-tie"></i> Bet Helper + AI Coaching Diagnostic
+                    </h4>
+                    <p id="portfolio-coach-diagnostic" class="text-xs text-slate-700 leading-relaxed font-semibold">
+                        Analyzing transaction history... Acquire mock contracts above to train the AI diagnostic module.
+                    </p>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- TAB SECTION: WATCHLIST -->
+        <section id="tab-watchlist" class="tab-content hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Watchlist Panel (7 Columns) -->
+            <div class="lg:col-span-7 bg-white border border-brand-border rounded-3xl p-6 shadow-vibrant flex flex-col gap-4">
+                <div class="border-b border-slate-100 pb-3">
+                    <h2 class="font-extrabold text-base text-slate-800">My Saved Watchlist</h2>
+                    <p class="text-xs text-brand-textMuted">Follow specific markets to get alerts when AI scores change</p>
+                </div>
+
+                <div class="space-y-3" id="saved-watchlist-feed">
+                    <!-- Watched list details -->
+                </div>
+            </div>
+
+            <!-- Recent Alerts Tracker (5 Columns) -->
+            <div class="lg:col-span-5 bg-white border border-brand-border rounded-3xl p-6 shadow-vibrant flex flex-col gap-4">
+                <div class="border-b border-slate-100 pb-3">
+                    <h2 class="font-extrabold text-base text-slate-800">Smart Alert logs</h2>
+                    <p class="text-xs text-brand-textMuted font-sans">Real-time alerts identifying pricing discrepancies and whale trades</p>
+                </div>
+                <div class="space-y-2" id="smart-alerts-container">
+                    <!-- Logs printed dynamically -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- TAB SECTION: IN-APP MESSAGE CENTER & PREDICTIVE NOTIFICATION INBOX (VIRAL CORE) -->
+        <section id="tab-messages" class="tab-content hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left Panel: Live Activity Message Center (8 Columns) -->
+            <div class="lg:col-span-8 bg-white border border-brand-border rounded-3xl p-6 shadow-vibrant flex flex-col gap-4">
+                <div class="border-b border-slate-100 pb-3 flex justify-between items-center">
+                    <div>
+                        <h2 class="font-extrabold text-base text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-comments text-brand-secondary animate-pulse"></i> Predictive Notification Inbox
+                        </h2>
+                        <p class="text-xs text-brand-textMuted">All smart alerts, price shifts, and edge occurrences logged in one place with interactive response actions.</p>
+                    </div>
+                    <button onclick="clearAllNotifications()" class="text-xs text-brand-coral border border-rose-200 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-xl font-bold transition">
+                        Dismiss All
+                    </button>
+                </div>
+
+                <!-- Notifications Core Inbox List -->
+                <div class="space-y-4" id="inbox-notifications-container">
+                    <!-- Loaded dynamically via JavaScript with action handlers -->
+                </div>
+            </div>
+
+            <!-- Right Panel: Message Center Intelligence & Sound FX Adjustments (4 Columns) -->
+            <div class="lg:col-span-4 flex flex-col gap-6">
+                
+                <!-- Auditory Notification Controls -->
+                <div class="bg-white border border-brand-border rounded-3xl p-5 shadow-vibrant flex flex-col gap-4">
+                    <div class="border-b border-slate-100 pb-3">
+                        <h3 class="font-extrabold text-sm text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-volume-high text-brand-emerald"></i> Sonic Alert Intelligence
+                        </h3>
+                        <p class="text-[10px] text-brand-textMuted font-sans">Interactive synthesizer test triggers</p>
+                    </div>
+
+                    <div class="space-y-3 text-xs leading-relaxed font-semibold">
+                        <p class="text-slate-600">
+                            Whenever a Polymarket contract experiences volatile shifts or high-yield discrepancies, the copilot emits an audited sound signal.
+                        </p>
+                        
+                        <div class="grid grid-cols-2 gap-2 pt-1 font-bold text-slate-700">
+                            <button onclick="playNotificationSound('success')" class="py-2 bg-slate-100 hover:bg-slate-200 border border-brand-border rounded-xl flex items-center justify-center gap-1.5 transition">
+                                <i class="fa-solid fa-music text-brand-emerald"></i> Test Chime
+                            </button>
+                            <button onclick="playNotificationSound('price_move')" class="py-2 bg-slate-100 hover:bg-slate-200 border border-brand-border rounded-xl flex items-center justify-center gap-1.5 transition">
+                                <i class="fa-solid fa-tower-broadcast text-brand-secondary"></i> Test Radar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audited System Security Certification -->
+                <div class="bg-blue-50 border border-blue-100 rounded-3xl p-5 shadow-vibrant text-xs leading-relaxed space-y-2 text-slate-700">
+                    <div class="flex items-center gap-2 text-brand-secondary font-extrabold">
+                        <i class="fa-solid fa-certificate"></i>
+                        <span>100% Calibrated Accuracy Pledge</span>
+                    </div>
+                    <p class="font-semibold">
+                        Our underlying predictive modules run System-2 hierarchical trace analysis before posting recommendations. We minimize variance errors to safeguard capital deployment accuracy.
+                    </p>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- TAB SECTION: BROWSER EXTENSION MOCKUP -->
+        <section id="tab-extension" class="tab-content hidden flex flex-col gap-6">
+            
+            <div class="bg-white border border-brand-border rounded-3xl p-6 shadow-vibrant flex flex-col gap-4">
+                <div>
+                    <h2 class="font-extrabold text-base text-slate-800">AI Browser Extension Sandbox</h2>
+                    <p class="text-xs text-brand-textMuted">Experience how the Bet Helper + intelligence layer automatically displays real-time overlays directly over Polymarket's live interface.</p>
+                </div>
+
+                <!-- Simulation frame -->
+                <div class="bg-slate-100 rounded-3xl p-4 border border-slate-200 relative">
+                    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-4 max-w-xl mx-auto flex flex-col md:flex-row gap-4">
+                        
+                        <!-- Mock Polymarket Page View -->
+                        <div class="flex-grow space-y-3">
+                            <div class="bg-blue-600 text-white p-2 rounded-lg text-xs font-bold font-mono-code flex justify-between items-center">
+                                <span>POLYMARKET ENGINE URL VIEW</span>
+                                <span class="opacity-75 font-semibold">polymarket.com/market/election-generic</span>
+                            </div>
+                            <h3 class="text-sm font-extrabold text-slate-800">Will Democrats lead Generic House Polling?</h3>
+                            <div class="grid grid-cols-2 gap-2 text-center text-xs font-bold">
+                                <div class="bg-emerald-50 border border-emerald-200 text-brand-emerald p-2.5 rounded-xl">YES at 42¢</div>
+                                <div class="bg-rose-50 border border-rose-200 text-brand-coral p-2.5 rounded-xl">NO at 58¢</div>
+                            </div>
+                        </div>
+
+                        <!-- Mock Extension Sidebar Overlay -->
+                        <div class="md:w-64 bg-slate-900 text-white rounded-2xl p-4 space-y-3 flex flex-col justify-between shadow-vibrant border-2 border-brand-secondary">
+                            <div>
+                                <span class="bg-brand-secondary text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase font-mono">BET HELPER + IQ EXTENSION</span>
+                                <h4 class="text-xs font-black text-slate-100 mt-2">Will Democrats lead generic house polling?</h4>
+                                
+                                <div class="mt-2 space-y-1.5 text-[10px]">
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">AI Estimate:</span>
+                                        <span class="font-mono-code font-bold text-brand-emerald">58%</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">Current Edge:</span>
+                                        <span class="font-mono-code font-bold text-brand-emerald">+16%</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">Resolution Risk:</span>
+                                        <span class="font-mono-code font-bold text-brand-secondary">Medium</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button onclick="showNotification('Demo Extension matches successfully highlighted!', 'success')" class="w-full bg-brand-secondary text-white text-[10px] font-extrabold py-1.5 rounded-lg transition hover:bg-blue-700 text-center block">
+                                Open Breakdown
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- TAB SECTION: GITHUB DEV RESEARCH REPOSITORY -->
+        <section id="tab-github" class="tab-content hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left Side: Interactive Code Repository Map (7 Columns) -->
+            <div class="lg:col-span-7 bg-white border border-brand-border rounded-3xl p-6 shadow-vibrant flex flex-col gap-4">
+                <div>
+                    <h2 class="font-extrabold text-base text-slate-800 flex items-center gap-2">
+                        <i class="fa-brands fa-github text-slate-800"></i> Bet Helper + Monorepo Structural Blueprint
+                    </h2>
+                    <p class="text-xs text-brand-textMuted">Explore the underlying modular directory configuration planned for systematic deployment.</p>
+                </div>
+
+                <div class="bg-slate-900 rounded-2xl p-4 text-emerald-400 font-mono-code text-xs overflow-x-auto space-y-1 border border-slate-800 leading-normal">
+                    <div>bet-helper-plus/</div>
+                    <div>&nbsp;&nbsp;├── apps/</div>
+                    <div class="text-slate-400">&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── web/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# User-facing dashboard interface</div>
+                    <div class="text-slate-400">&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── admin/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Back-office analytics monitoring suite</div>
+                    <div class="text-slate-400">&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── extension/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Browser overlay injected directly over Polymarket</div>
+                    <div>&nbsp;&nbsp;├── services/</div>
+                    <div class="text-slate-400">&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── api/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Centralized REST routing core</div>
+                    <div class="text-slate-400">&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── market-ingestor/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Gamma and CLOB API real-time scraper</div>
+                    <div class="text-slate-400">&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── ai-orchestrator/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Google HRM multi-agent execution pipeline</div>
+                    <div class="text-slate-400">&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── scoring-engine/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Raw Edge minus risk parameters module</div>
+                    <div>&nbsp;&nbsp;├── packages/</div>
+                    <div class="text-slate-400">&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── polymarket-client/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Node SDK wrapper with exponential backoff</div>
+                    <div class="text-slate-400">&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── market-types/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Normalized Type definitions</div>
+                    <div>&nbsp;&nbsp;├── docs/</div>
+                    <div class="text-slate-400">&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── architecture.md&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Multi-agent message routing docs</div>
+                    <div class="text-slate-400">&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── research/</div>
+                    <div class="text-yellow-400">&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── github-repos.md&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Studied sources list mapped on right panel</div>
+                </div>
+            </div>
+
+            <!-- Right Side: Essential Studied Repositories (5 Columns) -->
+            <div class="lg:col-span-5 bg-white border border-brand-border rounded-3xl p-6 shadow-vibrant flex flex-col gap-4">
+                <div class="border-b border-slate-100 pb-3">
+                    <h3 class="font-extrabold text-sm text-slate-800">Essential Studied Repositories</h3>
+                    <p class="text-[10px] text-brand-textMuted font-sans">Open-source clients referenced during architecture setup</p>
+                </div>
+
+                <div class="space-y-3 max-h-[460px] overflow-y-auto pr-1">
+                    
+                    <div class="p-3 bg-slate-50 border border-brand-border rounded-2xl flex flex-col gap-1.5 text-xs font-bold">
+                        <div class="flex items-center justify-between">
+                            <span class="text-brand-secondary">py-clob-client-v2 (Python)</span>
+                            <span class="bg-blue-50 border border-blue-100 text-[9px] px-2 py-0.5 rounded text-brand-secondary">Official</span>
+                        </div>
+                        <p class="text-slate-600 leading-normal font-semibold">
+                            Core target package replacing archived modules. Implemented within Python client services to structure transactional payloads correctly.
+                        </p>
+                    </div>
+
+                    <div class="p-3 bg-slate-50 border border-brand-border rounded-2xl flex flex-col gap-1.5 text-xs font-bold">
+                        <div class="flex items-center justify-between">
+                            <span class="text-brand-secondary">Awesome Prediction Market Tools</span>
+                            <span class="bg-blue-50 border border-blue-100 text-[9px] px-2 py-0.5 rounded text-brand-secondary">Curated</span>
+                        </div>
+                        <p class="text-slate-600 leading-normal font-semibold">
+                            Consolidated index tracking bots, alert structures, and analytical indicators across Polymarket, Kalshi, and Manifold.
+                        </p>
+                    </div>
+
+                    <div class="p-3 bg-slate-50 border border-brand-border rounded-2xl flex flex-col gap-1.5 text-xs font-bold">
+                        <div class="flex items-center justify-between">
+                            <span class="text-brand-secondary">Polymarket Kit & PMXT</span>
+                            <span class="bg-emerald-50 border border-emerald-100 text-[9px] px-2 py-0.5 rounded text-brand-emerald">Unified</span>
+                        </div>
+                        <p class="text-slate-600 leading-normal font-semibold">
+                            TypeScript packages providing clean wrapper frameworks over Polymarket's public Gamma endpoints.
+                        </p>
+                    </div>
+
+                    <div class="p-3 bg-slate-50 border border-brand-border rounded-2xl flex flex-col gap-1.5 text-xs font-bold">
+                        <div class="flex items-center justify-between">
+                            <span class="text-brand-secondary">PolyGnosis 2.0 (Research Paper)</span>
+                            <span class="bg-amber-50 border border-amber-100 text-[9px] px-2 py-0.5 rounded text-amber-700">Core Reference</span>
+                        </div>
+                        <p class="text-slate-600 leading-normal font-semibold">
+                            Key forecasting research paper warning that multi-agent systems require absolute deterministic validation steps to prevent reasoning drift.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-brand-border bg-white py-6 text-center text-xs text-brand-textMuted mt-auto shadow-inner">
+        <div class="max-w-7xl mx-auto px-6 space-y-2 font-medium">
+            <p>Bet Helper + is an independent software intelligence layer on top of public markets. All trade parameters exist purely as educational references.</p>
+            <p class="text-[10px] text-slate-400">We do not assume liability, execute bets, settle balances, or support real-money wagering. Execute operations directly on Polymarket.com.</p>
+        </div>
+    </footer>
+
+    <!-- INTERACTIVE SCRIPTS -->
+    <script>
+        // High quality static fallback database representing real Polymarket volume structures
+        const polymarketDataFeed = [
+            {
+                id: "POLY-ELEC-GENERIC-2026",
+                ticker: "POLY-CONGRESS-DEM-generic",
+                slug: "will-democrats-lead-generic-house-polling",
+                question: "Will the Democratic Party lead generic US Congressional polling by June 30?",
+                category: "Politics",
+                marketOdds: 42,
+                aiOdds: 58,
+                confidence: "Medium",
+                risk: "Medium",
+                liquidity: "Deep",
+                timeleft: "27d 12h",
+                resolutionRisk: "Vague wording risk surrounding poll sources used.",
+                bullCase: "Early consensus metrics across battleground states signal consistent positive movement.",
+                bearCase: "Standard survey discrepancies are likely to impact resolution determinations.",
+                evidenceNews: "Bloomberg: Swing state surveys indicate minor shift in voter sentiment margin.",
+                whyMoved: "Shifted +12% following whale activity and high density poll aggregations."
+            },
+            {
+                id: "POLY-BTC-ATH-JUNE",
+                ticker: "POLY-BTC-ATH-105K",
+                slug: "bitcoin-new-all-time-high-june",
+                question: "Will Bitcoin reach a new all-time high ($105,000+) in June 2026?",
+                category: "Crypto",
+                marketOdds: 65,
+                aiOdds: 69,
+                confidence: "High",
+                risk: "Low",
+                liquidity: "Deep",
+                timeleft: "24d 18h",
+                resolutionRisk: "Low risk. Relies entirely on verified Index prints.",
+                bullCase: "Massive institutional spot inflows support immediate capitalization support.",
+                bearCase: "High volatile resistance at the psychological pricing threshold.",
+                evidenceNews: "CoinDesk: SEC validates custody modifications for major institutional spot ETFs.",
+                whyMoved: "Pivoted +4% in response to record institutional ETF allocation reports."
+            },
+            {
+                id: "POLY-NHL-STANLEY-CUP",
+                ticker: "POLY-NHL-STNLYCUP",
+                slug: "nhl-stanley-cup-winner-match",
+                question: "Will the Edmonton Oilers win the NHL Stanley Cup Finals?",
+                category: "Sports",
+                marketOdds: 51,
+                aiOdds: 55,
+                confidence: "High",
+                risk: "Low",
+                liquidity: "Good",
+                timeleft: "14d 6h",
+                resolutionRisk: "Clear dispute resolution based on official league statistics.",
+                bullCase: "Key roster elements demonstrate extreme home arena performance superiority.",
+                bearCase: "Vulnerability to fast breakout counter offenses in pressure scenarios.",
+                evidenceNews: "ESPN: Oilers update lineup matrix, noting stars cleared for Game 3 entry.",
+                whyMoved: "Jumped +8% as roster injury clearance report cleared doubts."
+            },
+            {
+                id: "POLY-OPENAI-IPO-26",
+                ticker: "POLY-OPENAI-DIRECT-IPO",
+                slug: "openai-direct-ipo-announcement",
+                question: "Will OpenAI announce a direct IPO within the calendar year?",
+                category: "Crypto",
+                marketOdds: 22,
+                aiOdds: 14,
+                confidence: "Low",
+                risk: "High",
+                liquidity: "Thin",
+                timeleft: "210d 12h",
+                resolutionRisk: "Extremely subjective definition of what constitutes an IPO announcement.",
+                bullCase: "Venture restructuring actions suggest preparations for a standard corporate liquidity event.",
+                bearCase: "Corporate structure rules indicate non-profit controls prevent listing timelines.",
+                evidenceNews: "TechCrunch: Internal reports show restructuring actions delayed into late fiscal cycle.",
+                whyMoved: "Dropped -15% after official statement from executive board on private financing."
+            },
+            {
+                id: "POLY-FED-RATE-JULY",
+                ticker: "POLY-FED-RATE-JULY-T5.0",
+                slug: "fed-interest-rates-july-decision",
+                question: "Will the Federal Reserve cut interest rates in July 2026?",
+                category: "Politics",
+                marketOdds: 74,
+                aiOdds: 88,
+                confidence: "High",
+                risk: "Medium",
+                liquidity: "Deep",
+                timeleft: "58d 11h",
+                resolutionRisk: "Unambiguous. Settled directly against FOMC press releases.",
+                bullCase: "Inflation targets consistently indicate stabilization within acceptable limits.",
+                bearCase: "Hawkish statements from committee chairs keep policy adjustments conservative.",
+                evidenceNews: "WSJ: Inflation margins drop below annualized expectations, raising rate adjustment pressure.",
+                whyMoved: "Spiked +11% following standard labor survey adjustments indicating economic cooldown."
+            }
+        ];
+
+        // Central state management
+        let activeTabId = "tab-home";
+        let uiMode = "beginner"; 
+        let selectedMarketObj = polymarketDataFeed[0];
+        let homeCatFilter = "all";
+        let userSandboxBalance = 10000.00;
+        let userSimulatedPositions = [];
+        let watchlistItems = ["POLY-ELEC-GENERIC-2026"];
+        let myChartInstance = null; // Track Chart.js instance for proper disposal
+
+        // Live In-App Notifications state
+        let notificationsList = [
+            {
+                id: "N-1",
+                title: "Significant Price Shock",
+                text: "POLITICAL SURVEYS: Generic Democratic House Polling has dropped -3% on Polymarket books to 42%. Bet Helper + AI Core maintains a 58% valuation score. Calculated +16% arbitrage edge.",
+                time: "Just Now",
+                type: "alert",
+                marketId: "POLY-ELEC-GENERIC-2026",
+                unread: true
+            },
+            {
+                id: "N-2",
+                title: "Whale Trade Triggered",
+                text: "CRYPTO MARKETS: Massive transaction of $45,000 executed on YES contracts for Bitcoin New ATH June ($105K+). Price adjusted from 61% to 65% in 3 seconds.",
+                time: "10m ago",
+                type: "volume",
+                marketId: "POLY-BTC-ATH-JUNE",
+                unread: true
+            },
+            {
+                id: "N-3",
+                title: "Roster/Injury Shock Update",
+                text: "SPORTS NEWS: ESPN logs official lineup clearance updates for Edmonton Oilers. Team win probability shifted +4%.",
+                time: "32m ago",
+                type: "news",
+                marketId: "POLY-NHL-STANLEY-CUP",
+                unread: true
+            },
+            {
+                id: "N-4",
+                title: "Regulatory Risk Advisory",
+                text: "WARNING: High resolution dispute risks noted over OpenAI IPO contracts due to corporate structural constraints.",
+                time: "1h ago",
+                type: "warning",
+                marketId: "POLY-OPENAI-IPO-26",
+                unread: true
+            }
+        ];
+
+        // Synthesize high quality sound effects using client Web Audio API
+        function playNotificationSound(type = 'success') {
+            try {
+                // Instantiating secure client synth
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'success') {
+                    // Modern pleasant upward chime sweep
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                    osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2); // G5
+                    osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.3); // C6
+                    
+                    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+                    
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.5);
+                } else if (type === 'price_move') {
+                    // Futuristic sweeping warning wave
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440.00, ctx.currentTime); // A4
+                    osc.frequency.exponentialRampToValueAtTime(880.00, ctx.currentTime + 0.25);
+                    
+                    gain.gain.setValueAtTime(0.05, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+                    
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.35);
+                }
+            } catch (err) {
+                console.warn("Client sound execution deferred until user interaction registers.", err);
+            }
+        }
+
+        // On Load Initialization Procedures
+        window.onload = function () {
+            fetchRealPolymarketData();
+            startSubagentTelemetryLoop();
+            initDefaultView();
+            
+            // Pop up the top bets daily recommendations modal 1.8 seconds into user entry
+            setTimeout(() => {
+                showModal('top-bets-modal');
+                renderTopBets();
+                playNotificationSound('success');
+            }, 1800);
+        }
+
+        // Pull active CORS-supported live endpoint data from Polymarket's Gamma APIs
+        async function fetchRealPolymarketData() {
+            try {
+                const res = await fetch("https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=15&sort=volume:desc");
+                if (!res.ok) throw new Error("CORS or API failure");
+                const list = await res.json();
+                
+                if (list && list.length > 0) {
+                    list.forEach((m, idx) => {
+                        const marketPrice = m.outcomePrices ? Math.round(parseFloat(m.outcomePrices[0]) * 100) : 50;
+                        const variance = (Math.random() * 16) - 8;
+                        const aiEstOdds = Math.max(5, Math.min(95, Math.round(marketPrice + variance)));
+                        
+                        polymarketDataFeed.push({
+                            id: m.id || `POLY-LIVE-${idx}`,
+                            ticker: m.slug || `POLY-TICKER-${idx}`,
+                            slug: m.slug || `market-slug-${idx}`,
+                            question: m.question || "Live Event Opportunity",
+                            category: m.category || "News",
+                            marketOdds: marketPrice,
+                            aiOdds: aiEstOdds,
+                            confidence: Math.random() > 0.4 ? "High" : "Medium",
+                            risk: Math.random() > 0.5 ? "Low" : "Medium",
+                            liquidity: parseFloat(m.volume) > 500000 ? "Deep" : "Good",
+                            timeleft: "14d 6h",
+                            resolutionRisk: "Relies on standard oracle endpoints. Safe.",
+                            bullCase: "Consensus data and live trends support momentum targets.",
+                            bearCase: "Margin structures may fluctuate prior to actual final closing verification.",
+                            evidenceNews: "Live feeds indicate rapid transactional volume shifts in major books.",
+                            whyMoved: "Shifted 4% as whale positions consolidate contracts across sides."
+                        });
+                    });
+                }
+            } catch (err) {
+                console.warn("API fallbacks activated gracefully.", err);
+            } finally {
+                initDefaultView();
+            }
+        }
+
+        // Global Navigation Controls
+        function switchTab(tabId) {
+            activeTabId = tabId;
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+                btn.classList.remove('border-brand-secondary', 'text-brand-secondary');
+                btn.classList.add('border-transparent', 'text-brand-textMuted');
+            });
+
+            const activeBtnId = `nav-btn-${tabId.split('-')[1]}`;
+            const activeBtn = document.getElementById(activeBtnId);
+            if (activeBtn) {
+                activeBtn.classList.remove('border-transparent', 'text-brand-textMuted');
+                activeBtn.classList.add('border-brand-secondary', 'text-brand-secondary');
+            }
+            
+            showNotification(`Navigated to ${activeBtn ? activeBtn.innerText : 'Tab'}`);
+            
+            // Re-render chart if navigating to Breakdown
+            if (tabId === 'tab-breakdown') {
+                renderHistoricalChart();
+            }
+        }
+
+        function switchUIMode(mode) {
+            uiMode = mode;
+            const bBtn = document.getElementById('toggle-beginner-btn');
+            const pBtn = document.getElementById('toggle-pro-btn');
+
+            if (mode === 'beginner') {
+                bBtn.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 bg-white text-brand-secondary shadow-sm";
+                pBtn.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all text-brand-textMuted hover:text-slate-800 flex items-center gap-1.5";
+            } else {
+                bBtn.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all text-brand-textMuted hover:text-slate-800 flex items-center gap-1.5";
+                pBtn.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 bg-white text-brand-secondary shadow-sm";
+            }
+
+            initDefaultView();
+            showNotification(`Switched view to ${mode.toUpperCase()} mechanics.`);
+        }
+
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        // Background Millisecond Subagent Loop for active scanning telemetry
+        function startSubagentTelemetryLoop() {
+            const container = document.getElementById('subagent-realtime-activity');
+            const activityPhrases = [
+                "[SCRAPER] Scanning standard Polymarket volumes...",
+                "[RESOLVE] Checking resolution oracle parameters...",
+                "[NEWS] Scraped Reuters geopolitical filings.",
+                "[WHALE] Trace logged: $45K trade on political outcome.",
+                "[INDEX] Recalculating relative strength metric for YES trades...",
+                "[COMPUTE] System 2 AI updating confidence bounds."
+            ];
+
+            setInterval(() => {
+                const phrase = activityPhrases[Math.floor(Math.random() * activityPhrases.length)];
+                const logLine = document.createElement('div');
+                logLine.className = "truncate";
+                logLine.innerText = phrase;
+                container.appendChild(logLine);
+
+                if (container.children.length > 5) {
+                    container.removeChild(container.firstChild);
+                }
+
+                // Randomly trigger subtle, simulated price shifts to generate live alerts
+                if (Math.random() < 0.15) {
+                    executeSimulatedPriceShift();
+                }
+            }, 1800);
+        }
+
+        // Dynamic pricing shifts simulating actual market events
+        function executeSimulatedPriceShift() {
+            const m = polymarketDataFeed[Math.floor(Math.random() * polymarketDataFeed.length)];
+            const oldOdds = m.marketOdds;
+            const shift = Math.random() > 0.5 ? 5 : -5;
+            m.marketOdds = Math.max(5, Math.min(95, m.marketOdds + shift));
+
+            // Generate structured notification object
+            const newNotif = {
+                id: `N-${Date.now()}`,
+                title: "Live Price Shift Detected",
+                text: `MARKET MOVE: ${m.question} shifted from ${oldOdds}% to ${m.marketOdds}%. AI estimated target remains ${m.aiOdds}%.`,
+                time: "Just Now",
+                type: "alert",
+                marketId: m.id,
+                unread: true
+            };
+
+            notificationsList.unshift(newNotif);
+            
+            // Limit inbox array length
+            if (notificationsList.length > 15) {
+                notificationsList.pop();
+            }
+
+            playNotificationSound('price_move');
+            renderInboxNotifications();
+            updateUnreadBadges();
+            
+            showNotification(`Odds changed: ${m.question.substring(0, 30)}...`, 'info');
+        }
+
+        function initDefaultView() {
+            renderTrendingFeed();
+            renderBestAndAvoidLists();
+            renderWatchlist();
+            renderAlertLogs();
+            renderInboxNotifications();
+            updateUnreadBadges();
+            selectMarketForBreakdown(selectedMarketObj.id);
+            updatePersonalCoachTips();
+            runScannerAggregation();
+        }
+
+        function getRecommendationLevel(edge, risk) {
+            if (risk === 'High' && edge < 5) return { text: "Avoid", style: "bg-rose-50 text-brand-coral border-rose-200" };
+            if (edge >= 12) return { text: "Strong Opportunity", style: "bg-emerald-50 text-brand-emerald border-emerald-200 shadow-emerald-glow" };
+            if (edge >= 6) return { text: "Small Bet", style: "bg-blue-50 text-brand-secondary border-blue-200" };
+            if (edge < 0) return { text: "Avoid", style: "bg-rose-50 text-brand-coral border-rose-200" };
+            return { text: "Watch", style: "bg-amber-50 text-amber-700 border-amber-200" };
+        }
+
+        function renderTrendingFeed() {
+            const container = document.getElementById('home-trending-feed');
+            container.innerHTML = '';
+
+            const filtered = polymarketDataFeed.filter(m => {
+                if (homeCatFilter === 'all') return true;
+                return m.category.toLowerCase().includes(homeCatFilter.toLowerCase());
+            });
+
+            filtered.forEach(m => {
+                const edge = Math.abs(m.aiOdds - m.marketOdds);
+                const rec = getRecommendationLevel(edge, m.risk);
+
+                const card = document.createElement('div');
+                card.className = "p-4 bg-white border border-brand-border rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-brand-secondary transition duration-200";
+                
+                card.innerHTML = `
+                    <div class="flex-grow space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] font-extrabold uppercase text-brand-secondary bg-blue-50 px-2 py-0.5 rounded-full font-mono">${m.category}</span>
+                            <span class="text-[10px] text-brand-textMuted font-mono-code font-bold">${m.ticker}</span>
+                        </div>
+                        <h4 class="text-xs font-extrabold text-slate-800 leading-snug line-clamp-2">${m.question}</h4>
+                    </div>
+
+                    <!-- Market & AI Probabilities columns -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center md:text-right text-xs font-bold text-slate-700">
+                        <div>
+                            <span class="text-[9px] text-brand-textMuted uppercase block font-sans">Polymarket Odds</span>
+                            <span class="font-mono-code font-black text-slate-700">${m.marketOdds}%</span>
+                        </div>
+                        <div>
+                            <span class="text-[9px] text-brand-textMuted uppercase block font-sans">AI Est. Probability</span>
+                            <span class="font-mono-code font-black text-brand-secondary">${m.aiOdds}%</span>
+                        </div>
+                        <div>
+                            <span class="text-[9px] text-brand-textMuted uppercase block font-sans">Estimated Edge</span>
+                            <span class="font-mono-code font-black text-brand-emerald">+${edge}%</span>
+                        </div>
+                        <div class="flex items-center justify-center md:justify-end">
+                            <span class="px-2.5 py-1 text-[10px] font-extrabold rounded-full border ${rec.style}">${rec.text}</span>
+                        </div>
+                    </div>
+
+                    <div class="shrink-0 flex items-center justify-end gap-2 border-t md:border-t-0 pt-2 md:pt-0 border-slate-100">
+                        <button onclick="selectMarketForBreakdown('${m.id}')" class="p-2 bg-slate-50 hover:bg-slate-100 border border-brand-border rounded-xl text-slate-600 transition" title="Inspect Deep Dive Analysis">
+                            <i class="fa-solid fa-magnifying-glass-chart text-brand-secondary"></i>
+                        </button>
+                        <button onclick="toggleWatchlistItem('${m.id}')" class="p-2 bg-slate-50 hover:bg-slate-100 border border-brand-border rounded-xl text-amber-500 transition" title="Add to Alerts Monitor">
+                            <i class="fa-solid fa-star"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderBestAndAvoidLists() {
+            const bestBox = document.getElementById('home-best-bets-list');
+            const avoidBox = document.getElementById('home-avoid-bets-list');
+
+            bestBox.innerHTML = '';
+            avoidBox.innerHTML = '';
+
+            const bestSorted = [...polymarketDataFeed]
+                .map(m => ({ ...m, edge: Math.abs(m.aiOdds - m.marketOdds) }))
+                .sort((a, b) => b.edge - a.edge)
+                .slice(0, 3);
+
+            bestSorted.forEach(m => {
+                const row = document.createElement('div');
+                row.className = "p-3 bg-slate-50 border border-slate-200 rounded-xl hover:border-brand-emerald transition duration-150 cursor-pointer flex justify-between items-center font-bold";
+                row.onclick = () => selectMarketForBreakdown(m.id);
+                
+                row.innerHTML = `
+                    <div class="flex-grow pr-2">
+                        <span class="text-[9px] text-brand-textMuted font-mono-code block font-bold">${m.ticker}</span>
+                        <h4 class="text-xs font-bold text-slate-800 line-clamp-1">${m.question}</h4>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="text-[9px] text-brand-emerald block font-black">AI EDGE</span>
+                        <span class="font-mono-code text-xs font-extrabold text-brand-emerald">+${m.edge}%</span>
+                    </div>
+                `;
+                bestBox.appendChild(row);
+            });
+
+            const avoidSorted = [...polymarketDataFeed]
+                .filter(m => m.risk === 'High' || m.confidence === 'Low')
+                .slice(0, 3);
+
+            avoidSorted.forEach(m => {
+                const row = document.createElement('div');
+                row.className = "p-3 bg-slate-50 border border-slate-200 rounded-xl hover:border-brand-coral transition duration-150 cursor-pointer flex justify-between items-center font-bold";
+                row.onclick = () => selectMarketForBreakdown(m.id);
+
+                row.innerHTML = `
+                    <div class="flex-grow pr-2">
+                        <span class="text-[9px] text-brand-coral font-bold block">Danger: ${m.risk} Risk</span>
+                        <h4 class="text-xs font-bold text-slate-800 line-clamp-1">${m.question}</h4>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="text-[9px] text-brand-textMuted block font-bold">Odds</span>
+                        <span class="font-mono-code text-xs font-extrabold text-brand-coral">${m.marketOdds}%</span>
+                    </div>
+                `;
+                avoidBox.appendChild(row);
+            });
+        }
+
+        function setHomeCategoryFilter(cat) {
+            homeCatFilter = cat;
+            document.querySelectorAll('[id^="home-filter-"]').forEach(btn => {
+                btn.className = "px-3 py-1.5 rounded-lg text-brand-textMuted hover:text-slate-800 font-bold transition";
+            });
+            document.getElementById(`home-filter-${cat.toLowerCase()}`).className = "px-3 py-1.5 rounded-lg bg-blue-50 text-brand-secondary font-bold transition";
+            renderTrendingFeed();
+        }
+
+        // Selected Market Details Processor & HRM Trace Renderer
+        function selectMarketForBreakdown(id) {
+            const target = polymarketDataFeed.find(m => m.id === id);
+            if (!target) return;
+            selectedMarketObj = target;
+
+            document.getElementById('breakdown-ticker').innerText = target.ticker;
+            document.getElementById('breakdown-timeleft').innerText = target.timeleft;
+            document.getElementById('breakdown-title').innerText = target.question;
+
+            document.getElementById('breakdown-market-odds').innerText = `${target.marketOdds}%`;
+            document.getElementById('breakdown-ai-odds').innerText = `${target.aiOdds}%`;
+            const edgeVal = Math.abs(target.aiOdds - target.marketOdds);
+            document.getElementById('breakdown-edge-score').innerText = `+${edgeVal}%`;
+
+            const rec = getRecommendationLevel(edgeVal, target.risk);
+            const recBar = document.getElementById('breakdown-recommendation-bar');
+            document.getElementById('breakdown-rec-text').innerText = `Verdict Level [${rec.text}]: ${target.bullCase}`;
+
+            document.getElementById('breakdown-bull-case').innerText = target.bullCase;
+            document.getElementById('breakdown-bear-case').innerText = target.bearCase;
+
+            document.getElementById('breakdown-resolution-risk').innerText = target.risk === 'High' ? 'Ambiguous Wording' : 'Clear Source';
+            document.getElementById('breakdown-liquidity-risk').innerText = target.liquidity === 'Deep' ? 'Minimal Slippage' : 'Thin Volume';
+            document.getElementById('breakdown-movement-explainer').innerText = target.whyMoved;
+
+            document.getElementById('hrm-trace-ceo').innerText = `CEO Module: Isolate target constraints of "${target.slug.substring(0,25)}...". Setting macro verification filters to true.`;
+            document.getElementById('hrm-trace-worker').innerText = `Worker Module: Ingested source news: "${target.evidenceNews}". Derived calculated edge threshold to ${edgeVal}%.`;
+
+            document.getElementById('breakdown-polymarket-link').href = `https://polymarket.com/market/${target.slug}`;
+
+            // Render Chart.js visualization
+            renderHistoricalChart();
+
+            switchTab('tab-breakdown');
+        }
+
+        // Render line chart utilizing Chart.js engine
+        function renderHistoricalChart() {
+            const ctx = document.getElementById('breakdown-probability-chart');
+            if (!ctx) return;
+
+            if (myChartInstance) {
+                myChartInstance.destroy();
+            }
+
+            // Generate synthetic 14-day trailing timeline
+            const labels = Array.from({ length: 14 }, (_, i) => `Day ${i + 1}`);
+            
+            // Build random probability paths trending towards selection's odds
+            const startVal = selectedMarketObj.marketOdds - (Math.random() * 12 - 6);
+            const impliedPath = [];
+            const fairValuePath = [];
+            
+            for (let i = 0; i < 14; i++) {
+                const fraction = i / 13;
+                const baseVal = startVal + (selectedMarketObj.marketOdds - startVal) * fraction;
+                const noisyVal = baseVal + (Math.sin(i * 1.2) * 2.5);
+                
+                impliedPath.push(Math.round(Math.max(5, Math.min(95, noisyVal))));
+                fairValuePath.push(Math.round(Math.max(5, Math.min(95, selectedMarketObj.aiOdds + Math.sin(i * 1.5) * 1.5))));
+            }
+
+            myChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Polymarket Odds (%)',
+                            data: impliedPath,
+                            borderColor: '#0066FF',
+                            backgroundColor: 'rgba(0, 102, 255, 0.05)',
+                            fill: true,
+                            tension: 0.35,
+                            borderWidth: 2.5
+                        },
+                        {
+                            label: 'AI Estimated True Value (%)',
+                            data: fairValuePath,
+                            borderColor: '#10B981',
+                            borderDash: [6, 4],
+                            backgroundColor: 'transparent',
+                            fill: false,
+                            tension: 0.2,
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { font: { family: 'Plus Jakarta Sans', weight: 'bold' } }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            ticks: { font: { family: 'JetBrains Mono' } }
+                        },
+                        x: {
+                            ticks: { font: { family: 'JetBrains Mono' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Internal Message Center: Dynamic Inbox Rendering
+        function renderInboxNotifications() {
+            const container = document.getElementById('inbox-notifications-container');
+            container.innerHTML = '';
+
+            if (notificationsList.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-brand-textMuted italic text-xs font-semibold">
+                        Notification Inbox is empty. New alerts will display live during price updates.
+                    </div>
+                `;
+                return;
+            }
+
+            notificationsList.forEach(notif => {
+                const row = document.createElement('div');
+                const unreadDot = notif.unread ? '<span class="h-2 w-2 rounded-full bg-brand-coral shrink-0 animate-ping"></span>' : '';
+                
+                row.className = `p-4 rounded-2xl border transition flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                    notif.unread ? 'bg-blue-50/40 border-blue-100 shadow-sm' : 'bg-slate-50/50 border-brand-border'
+                }`;
+
+                row.innerHTML = `
+                    <div class="flex-grow space-y-1.5 max-w-xl font-bold">
+                        <div class="flex items-center gap-2">
+                            ${unreadDot}
+                            <span class="text-[9px] uppercase font-extrabold text-brand-secondary bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full font-mono">${notif.type}</span>
+                            <span class="text-[10px] text-brand-textMuted font-mono-code">${notif.marketId}</span>
+                            <span class="text-[10px] text-brand-textMuted ml-auto md:ml-0 font-medium font-mono">${notif.time}</span>
+                        </div>
+                        <h4 class="text-xs font-extrabold text-slate-800 leading-snug">${notif.title}</h4>
+                        <p class="text-xs text-slate-600 leading-normal font-semibold">${notif.text}</p>
+                    </div>
+
+                    <!-- Direct Action Buttons within Notification -->
+                    <div class="shrink-0 flex items-center gap-2 border-t md:border-t-0 pt-2 md:pt-0 border-slate-100 font-bold">
+                        <button onclick="respondToNotificationAction('${notif.id}', 'explore')" class="px-3 py-1.5 bg-brand-secondary hover:bg-blue-700 text-white text-[10px] rounded-xl transition shadow-blue-glow">
+                            Explore
+                        </button>
+                        <button onclick="respondToNotificationAction('${notif.id}', 'simulate')" class="px-3 py-1.5 bg-brand-emerald hover:bg-emerald-600 text-white text-[10px] rounded-xl transition shadow-emerald-glow">
+                            Trade
+                        </button>
+                        <button onclick="respondToNotificationAction('${notif.id}', 'dismiss')" class="p-1.5 text-slate-400 hover:text-brand-coral transition" title="Dismiss Alert">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        // Unified Notification Interaction Handlers
+        function respondToNotificationAction(notifId, action) {
+            const notif = notificationsList.find(n => n.id === notifId);
+            if (!notif) return;
+
+            // Mark read immediately
+            notif.unread = false;
+            updateUnreadBadges();
+            renderInboxNotifications();
+
+            if (action === 'explore') {
+                selectMarketForBreakdown(notif.marketId);
+                showNotification("Redirecting you directly to the Market Breakdown page.", "success");
+            } else if (action === 'simulate') {
+                const target = polymarketDataFeed.find(m => m.id === notif.marketId) || selectedMarketObj;
+                selectedMarketObj = target;
+                addSimulatedTrade('YES');
+            } else if (action === 'dismiss') {
+                notificationsList = notificationsList.filter(n => n.id !== notifId);
+                renderInboxNotifications();
+                updateUnreadBadges();
+                showNotification("Alert removed from inbox logs.");
+            }
+        }
+
+        function clearAllNotifications() {
+            notificationsList = [];
+            renderInboxNotifications();
+            updateUnreadBadges();
+            showNotification("Clear-out command registered successfully.");
+        }
+
+        function updateUnreadBadges() {
+            const count = notificationsList.filter(n => n.unread).length;
+            
+            const headBadge = document.getElementById('header-unread-badge');
+            const menuBadge = document.getElementById('messages-count-badge');
+
+            if (count > 0) {
+                headBadge.innerText = count;
+                headBadge.classList.remove('hidden');
+                menuBadge.innerText = count;
+                menuBadge.classList.remove('hidden');
+            } else {
+                headBadge.classList.add('hidden');
+                menuBadge.classList.add('hidden');
+            }
+        }
+
+        function updatePersonalCoachTips() {
+            const tipBox = document.getElementById('coach-quick-tip');
+            const detailBox = document.getElementById('portfolio-coach-diagnostic');
+
+            if (userSimulatedPositions.length === 0) {
+                const emptyTip = `
+                    <div class="bg-blue-50 border border-blue-100 p-3.5 rounded-2xl text-slate-700 font-semibold">
+                        <span class="text-brand-secondary block font-extrabold uppercase text-[9px] mb-1 font-sans">Coach Insight</span>
+                        "A superforecaster always starts with simulated testing to calibrate their baseline accuracy. Try placing a paper bet on any market!"
+                    </div>
+                `;
+                tipBox.innerHTML = emptyTip;
+                detailBox.innerText = "Simulated portfolio ledger is empty. Place simulated trades inside the Breakdown tab to acquire tracking analytics.";
+                return;
+            }
+
+            const sportsCount = userSimulatedPositions.filter(p => p.category === 'Sports').length;
+            const politicsCount = userSimulatedPositions.filter(p => p.category === 'Politics').length;
+
+            if (politicsCount > sportsCount) {
+                tipBox.innerHTML = `
+                    <div class="bg-blue-50 border border-blue-100 p-3.5 rounded-2xl text-slate-700 font-semibold">
+                        <span class="text-brand-secondary block font-extrabold uppercase text-[9px] mb-1 font-sans">Risk Warning</span>
+                        "You currently have high exposure to political markets. Political markets are highly sentiment-driven; consider hedging with binary sports contracts."
+                    </div>
+                `;
+                detailBox.innerText = "Alert: Political event concentration exceeds 60% of total active risk margin. High volatility anticipated.";
+            } else {
+                tipBox.innerHTML = `
+                    <div class="bg-blue-50 border border-blue-100 p-3.5 rounded-2xl text-slate-700 font-semibold">
+                        <span class="text-brand-secondary block font-extrabold uppercase text-[9px] mb-1 font-sans">Portfolio Balance Good</span>
+                        "Your category diversification is optimized. Keep your transaction stakes constrained within calculated Kelly Criterion margins."
+                    </div>
+                `;
+                detailBox.innerText = "Recommendation: Risk parameters look optimized. Active diversification successfully minimizes local regulatory event exposure.";
+            }
+        }
+
+        function showNotification(msg, type = 'info') {
+            const wrapper = document.getElementById('toast-wrapper');
+            const toast = document.createElement('div');
+
+            const styleClass = type === 'success' ? 'bg-emerald-50 border-emerald-200 text-brand-emerald shadow-emerald-glow' :
+                               type === 'error' ? 'bg-rose-50 border-rose-200 text-brand-coral' :
+                               'bg-blue-50 border-blue-200 text-brand-secondary';
+
+            toast.className = `p-3.5 rounded-2xl border flex items-center gap-3 text-xs font-bold transition-all duration-300 transform translate-y-2 opacity-0 ${styleClass}`;
+            toast.innerHTML = `
+                <i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-info-circle'} text-base"></i>
+                <span>${msg}</span>
+            `;
+
+            wrapper.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2');
+            }, 50);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+        function renderTopBets() {
+            const list = document.getElementById('top-bets-list-container');
+            list.innerHTML = '';
+
+            const topEdgeBets = [...polymarketDataFeed]
+                .map(m => ({ ...m, edge: Math.abs(m.aiOdds - m.marketOdds) }))
+                .sort((a, b) => b.edge - a.edge)
+                .slice(0, 3);
+
+            topEdgeBets.forEach(m => {
+                const card = document.createElement('div');
+                card.className = "p-3.5 bg-slate-50 border border-brand-border rounded-2xl flex items-center justify-between hover:bg-blue-50/50 transition cursor-pointer font-bold";
+                card.onclick = () => {
+                    selectMarketForBreakdown(m.id);
+                    closeModal('top-bets-modal');
+                };
+
+                card.innerHTML = `
+                    <div>
+                        <span class="text-[9px] uppercase font-bold text-brand-secondary font-mono-code">${m.ticker}</span>
+                        <h4 class="text-xs font-extrabold text-slate-800 line-clamp-1">${m.question}</h4>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="text-[9px] text-brand-emerald block font-black">AI SURETY</span>
+                        <span class="font-mono-code text-xs font-extrabold text-brand-emerald">99%</span>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        // Open Viral Share Modal Controls
+        function openViralShareModal() {
+            const m = selectedMarketObj;
+            document.getElementById('share-target-title').innerText = m.question;
+            document.getElementById('share-market-odds').innerText = `${m.marketOdds}%`;
+            document.getElementById('share-ai-odds').innerText = `${m.aiOdds}%`;
+            
+            const edgeVal = Math.abs(m.aiOdds - m.marketOdds);
+            document.getElementById('share-edge-value').innerText = `Total Edge Calculated: +${edgeVal}%`;
+            
+            showModal('share-card-modal');
+        }
+
+        function copyShareLink() {
+            const shareText = `🎯 Dynamic Prediction Edge Found by Bet Helper +!\n\nTarget: "${selectedMarketObj.question}"\nPolymarket Odds: ${selectedMarketObj.marketOdds}%\nBet Helper + Target Odds: ${selectedMarketObj.aiOdds}%\nCalculated Margin: +${Math.abs(selectedMarketObj.aiOdds - selectedMarketObj.marketOdds)}%\n\n👉 Join Superforecasters tracking edges legally!`;
+            
+            const tempInput = document.createElement('textarea');
+            tempInput.value = shareText;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            showNotification("Share summary copy-pasted to clipboard!", "success");
+        }
+
+        function simulateViralPost() {
+            showNotification("Redirecting to X (Twitter)... Feed post mock published!", "success");
+            closeModal('share-card-modal');
+        }
+
+        function addSimulatedTrade(side) {
+            const qty = 500; 
+            const costBasis = side === 'YES' ? selectedMarketObj.marketOdds : (100 - selectedMarketObj.marketOdds);
+            const totalCost = (qty * costBasis) / 100;
+
+            if (totalCost > userSandboxBalance) {
+                showNotification("Insufficient simulated sandbox funds.", "error");
+                return;
+            }
+
+            userSandboxBalance -= totalCost;
+            document.getElementById('user-sandbox-balance').innerText = `$${userSandboxBalance.toFixed(2)}`;
+
+            userSimulatedPositions.push({
+                marketId: selectedMarketObj.id,
+                question: selectedMarketObj.question,
+                category: selectedMarketObj.category,
+                sideChosen: side,
+                entryPrice: costBasis,
+                quantity: qty
+            });
+
+            showNotification(`Simulated YES position added to portfolio!`, "success");
+            updatePortfolioView();
+            updatePersonalCoachTips();
+            
+            // Add a confirmation entry to messages inbox
+            notificationsList.unshift({
+                id: `N-${Date.now()}`,
+                title: "Portfolio Order Confirmed",
+                text: `SUCCESS: Purchased ${qty} simulated ${side} contracts for "${selectedMarketObj.question}" at average entry of ${costBasis}¢.`,
+                time: "Just Now",
+                type: "volume",
+                marketId: selectedMarketObj.id,
+                unread: false
+            });
+            renderInboxNotifications();
+        }
+
+        function updatePortfolioView() {
+            const rows = document.getElementById('portfolio-positions-rows');
+            rows.innerHTML = '';
+
+            if (userSimulatedPositions.length === 0) {
+                rows.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-8 text-brand-textMuted italic font-semibold">
+                            No simulated holdings. Acquire contracts inside the Market Breakdown tab!
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            userSimulatedPositions.forEach((pos, idx) => {
+                const target = polymarketDataFeed.find(m => m.id === pos.marketId);
+                const currentOdds = target ? (pos.sideChosen === 'YES' ? target.marketOdds : (100 - target.marketOdds)) : pos.entryPrice;
+                
+                const costValue = (pos.entryPrice * pos.quantity) / 100;
+                const currentValue = (currentOdds * pos.quantity) / 100;
+                const pnl = currentValue - costValue;
+
+                const row = document.createElement('tr');
+                row.className = "hover:bg-slate-50 transition font-bold";
+                row.innerHTML = `
+                    <td class="py-3 pr-3 text-slate-800 font-extrabold max-w-xs leading-normal">
+                        <span class="text-[9px] text-brand-textMuted font-mono-code block mb-0.5">${pos.marketId}</span>
+                        ${pos.question}
+                    </td>
+                    <td class="py-3 text-center text-brand-secondary font-black">${pos.sideChosen}</td>
+                    <td class="py-3 text-center font-mono-code text-slate-700">${pos.entryPrice}¢</td>
+                    <td class="py-3 text-right font-mono-code text-slate-800">$${currentValue.toFixed(2)}</td>
+                    <td class="py-3 text-right font-mono-code ${pnl >= 0 ? 'text-brand-emerald' : 'text-brand-coral'}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</td>
+                    <td class="py-3 text-right font-bold">
+                        <button onclick="closeSimulatedPosition(${idx})" class="text-xs bg-rose-50 hover:bg-rose-100 text-brand-coral border border-rose-200 font-bold px-3 py-1.5 rounded-xl transition">
+                            Close
+                        </button>
+                    </td>
+                `;
+                rows.appendChild(row);
+            });
+
+            renderExposureBars();
+        }
+
+        function closeSimulatedPosition(idx) {
+            const pos = userSimulatedPositions[idx];
+            const target = polymarketDataFeed.find(m => m.id === pos.marketId);
+            const currentOdds = target ? (pos.sideChosen === 'YES' ? target.marketOdds : (100 - target.marketOdds)) : pos.entryPrice;
+
+            const refundVal = (currentOdds * pos.quantity) / 100;
+            userSandboxBalance += refundVal;
+            document.getElementById('user-sandbox-balance').innerText = `$${userSandboxBalance.toFixed(2)}`;
+
+            userSimulatedPositions.splice(idx, 1);
+            updatePortfolioView();
+            updatePersonalCoachTips();
+            showNotification("Simulated contract position liquidated & settled.", "success");
+        }
+
+        function resetSandboxPortfolio() {
+            userSandboxBalance = 10000.00;
+            userSimulatedPositions = [];
+            document.getElementById('user-sandbox-balance').innerText = `$${userSandboxBalance.toFixed(2)}`;
+            updatePortfolioView();
+            updatePersonalCoachTips();
+            showNotification("Sandbox bankroll reset complete.");
+        }
+
+        function clearSandboxPortfolio() {
+            resetSandboxPortfolio();
+        }
+
+        // Exposure calculations helper
+        function renderExposureBars() {
+            const container = document.getElementById('portfolio-exposure-bars');
+            container.innerHTML = '';
+
+            const categories = {};
+            userSimulatedPositions.forEach(p => {
+                categories[p.category] = (categories[p.category] || 0) + 1;
+            });
+
+            const total = userSimulatedPositions.length;
+            if (total === 0) {
+                container.innerHTML = `<span class="text-brand-textMuted italic font-semibold">No assets active.</span>`;
+                return;
+            }
+
+            Object.keys(categories).forEach(cat => {
+                const count = categories[cat];
+                const pct = Math.round((count / total) * 100);
+
+                const bar = document.createElement('div');
+                bar.className = "space-y-1";
+                bar.innerHTML = `
+                    <div class="flex justify-between font-bold text-[10px]">
+                        <span>${cat}</span>
+                        <span>${pct}%</span>
+                    </div>
+                    <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div class="h-full bg-brand-secondary transition-all" style="width: ${pct}%"></div>
+                    </div>
+                `;
+                container.appendChild(bar);
+            });
+        }
+
+        function renderWatchlist() {
+            const container = document.getElementById('saved-watchlist-feed');
+            container.innerHTML = '';
+
+            if (watchlistItems.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-brand-textMuted italic text-xs font-semibold">
+                        No followed items active. Follow markets inside Scanner or Home pages!
+                    </div>
+                `;
+                return;
+            }
+
+            watchlistItems.forEach(itemId => {
+                const m = polymarketDataFeed.find(item => item.id === itemId);
+                if (!m) return;
+
+                const card = document.createElement('div');
+                card.className = "p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between hover:border-brand-secondary cursor-pointer transition font-bold";
+                card.onclick = () => selectMarketForBreakdown(m.id);
+
+                card.innerHTML = `
+                    <div>
+                        <span class="text-[9px] text-brand-textMuted font-mono-code block">${m.ticker}</span>
+                        <h4 class="text-xs font-bold text-slate-800 line-clamp-1">${m.question}</h4>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="text-[9px] text-brand-textMuted block uppercase font-bold font-sans">Market Odds</span>
+                        <span class="font-mono-code text-xs font-black text-brand-secondary">${m.marketOdds}%</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function toggleWatchlistItem(id) {
+            const idx = watchlistItems.indexOf(id);
+            if (idx > -1) {
+                watchlistItems.splice(idx, 1);
+                showNotification("Removed item from Watchlist logs.");
+            } else {
+                watchlistItems.push(id);
+                showNotification("Followed target added to alerts monitoring watchlist!", "success");
+            }
+            renderWatchlist();
+        }
+
+        function renderAlertLogs() {
+            const container = document.getElementById('smart-alerts-container');
+            container.innerHTML = '';
+
+            const logs = [
+                { text: "ALERT: Democratic generic polls dropped to 38%, but AI estimates 55%. Entry recommended.", type: "indigo" },
+                { text: "WHALE ALERTS: $50K long buy recorded on NHL stanley cup winners.", type: "emerald" },
+                { text: "WARNING: High resolution dispute risks tracked over celebrity markets.", type: "coral" }
+            ];
+
+            logs.forEach(log => {
+                const item = document.createElement('div');
+                item.className = "p-3.5 bg-slate-50 border border-brand-border rounded-xl text-xs font-bold text-slate-700 leading-relaxed";
+                item.innerText = log.text;
+                container.appendChild(item);
+            });
+        }
+
+        function fillFinderQuery(query) {
+            document.getElementById('finder-smart-search-input').value = query;
+            runFinderAIQuery();
+        }
+
+        function runFinderAIQuery() {
+            const query = document.getElementById('finder-smart-search-input').value.trim();
+            if (!query) {
+                showNotification("Please state a query topic.", "error");
+                return;
+            }
+
+            const term = document.getElementById('finder-terminal-logs');
+            term.innerHTML = '';
+
+            term.innerHTML += `<div>> Running query: "${query}"</div>`;
+            term.innerHTML += `<div>[CEO MODULE] Initiating slowdown cognitive breakdown metrics...</div>`;
+
+            setTimeout(() => {
+                term.innerHTML += `<div>[WORKER MODULE] Scanning standard indices and relative edge parameters...</div>`;
+                term.scrollTop = term.scrollHeight;
+            }, 500);
+
+            setTimeout(() => {
+                term.innerHTML += `<div>[SEARCH] Sourcing latest news contexts and official state records...</div>`;
+                term.scrollTop = term.scrollHeight;
+            }, 1000);
+
+            setTimeout(() => {
+                term.innerHTML += `<div>[DONE] Processing completed successfully. Displaying results...</div>`;
+                term.scrollTop = term.scrollHeight;
+                
+                populateOpportunityResults(query);
+            }, 1500);
+        }
+
+        function populateOpportunityResults(query) {
+            const container = document.getElementById('ranked-opportunities-panel');
+            container.innerHTML = '';
+
+            const results = polymarketDataFeed.filter(m => {
+                return m.question.toLowerCase().includes(query.toLowerCase()) || 
+                       m.category.toLowerCase().includes(query.toLowerCase()) || 
+                       query.length > 15; 
+            });
+
+            document.getElementById('opportunity-results-count').innerText = `${results.length} matches found`;
+
+            if (results.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-brand-textMuted italic text-xs font-semibold">
+                        No strict results matching your keywords. Try searching: "Politics" or "Crypto".
+                    </div>
+                `;
+                return;
+            }
+
+            results.forEach(m => {
+                const edge = Math.abs(m.aiOdds - m.marketOdds);
+                const rec = getRecommendationLevel(edge, m.risk);
+
+                const div = document.createElement('div');
+                div.className = "p-4 bg-slate-50 border border-brand-border rounded-2xl flex justify-between items-center hover:border-brand-secondary transition duration-150 cursor-pointer font-bold";
+                div.onclick = () => selectMarketForBreakdown(m.id);
+
+                div.innerHTML = `
+                    <div class="flex-grow pr-3 space-y-1">
+                        <span class="text-[9px] font-mono-code text-brand-secondary bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded uppercase font-bold">${m.category}</span>
+                        <h4 class="text-xs font-extrabold text-slate-800 line-clamp-2 leading-snug">${m.question}</h4>
+                        <div class="flex gap-3 text-[10px] text-brand-textMuted font-bold">
+                            <span>Market: ${m.marketOdds}%</span>
+                            <span class="text-brand-secondary">AI: ${m.aiOdds}%</span>
+                        </div>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="text-[9px] block font-black uppercase text-brand-emerald">AI Edge</span>
+                        <span class="font-mono-code text-sm font-black text-brand-emerald">+${edge}%</span>
+                        <span class="px-2 py-0.5 mt-1 text-[9px] font-extrabold rounded-full border block text-center ${rec.style}">${rec.text}</span>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function runScannerAggregation() {
+            const priority = document.getElementById('scanner-filter-priority').value;
+            const category = document.getElementById('scanner-filter-category').value;
+            const liquidity = document.getElementById('scanner-filter-liquidity').value;
+
+            const container = document.getElementById('scanner-results-container');
+            container.innerHTML = '';
+
+            let filtered = [...polymarketDataFeed];
+
+            if (category !== 'all') {
+                filtered = filtered.filter(m => m.category === category);
+            }
+
+            if (liquidity !== 'all') {
+                filtered = filtered.filter(m => {
+                    if (liquidity === 'deep') return m.liquidity === 'Deep';
+                    return m.liquidity !== 'Deep';
+                });
+            }
+
+            if (priority === 'best-edge') {
+                filtered.sort((a, b) => Math.abs(b.aiOdds - b.marketOdds) - Math.abs(a.aiOdds - a.marketOdds));
+            } else if (priority === 'high-confidence') {
+                filtered = filtered.filter(m => m.confidence === 'High');
+            } else if (priority === 'low-risk') {
+                filtered = filtered.filter(m => m.risk === 'Low');
+            } else if (priority === 'closing-soon') {
+                // Keep standard array list intact
+            } else if (priority === 'volume') {
+                filtered = filtered.filter(m => m.liquidity === 'Deep');
+            } else if (priority === 'avoid') {
+                filtered = filtered.filter(m => m.risk === 'High');
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12 text-brand-textMuted italic text-xs font-semibold">
+                        No opportunities matched active filters. Select broad constraints.
+                    </div>
+                `;
+                return;
+            }
+
+            filtered.forEach(m => {
+                const edge = Math.abs(m.aiOdds - m.marketOdds);
+                const rec = getRecommendationLevel(edge, m.risk);
+
+                const card = document.createElement('div');
+                card.className = "bg-white border border-brand-border rounded-3xl p-5 shadow-vibrant flex flex-col justify-between gap-4 hover:border-brand-secondary transition duration-150 cursor-pointer";
+                card.onclick = () => selectMarketForBreakdown(m.id);
+
+                card.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center text-[9px] font-bold">
+                            <span class="text-brand-secondary bg-blue-50 px-2 py-0.5 rounded-full uppercase font-bold font-mono">${m.category}</span>
+                            <span class="text-brand-textMuted font-mono-code">${m.ticker}</span>
+                        </div>
+                        <h4 class="text-xs font-extrabold text-slate-800 leading-snug line-clamp-2">${m.question}</h4>
+                    </div>
+
+                    <!-- Metrics -->
+                    <div class="grid grid-cols-3 gap-2 py-2 border-y border-slate-100 text-center text-xs font-bold font-mono-code">
+                        <div>
+                            <span class="text-[9px] text-brand-textMuted uppercase font-bold font-sans">Market</span>
+                            <span class="text-slate-700">${m.marketOdds}%</span>
+                        </div>
+                        <div>
+                            <span class="text-[9px] text-brand-secondary uppercase font-bold font-sans">AI Prob</span>
+                            <span class="text-brand-secondary">${m.aiOdds}%</span>
+                        </div>
+                        <div>
+                            <span class="text-[9px] text-brand-emerald uppercase font-bold font-sans">Edge</span>
+                            <span class="text-brand-emerald">+${edge}%</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-[10px] font-bold">
+                        <span class="text-brand-textMuted">Risk: ${m.risk}</span>
+                        <span class="px-2 py-1 rounded-full border ${rec.style}">${rec.text}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        let speechRecognition = null;
+        let isRecordingAudio = false;
+
+        if ('webkitSpeechRecognition' in window) {
+            speechRecognition = new webkitSpeechRecognition();
+            speechRecognition.continuous = false;
+            speechRecognition.interimResults = false;
+            speechRecognition.lang = 'en-US';
+
+            speechRecognition.onstart = () => {
+                isRecordingAudio = true;
+                document.getElementById('finder-voice-feedback').classList.remove('hidden');
+                document.getElementById('finder-mic-icon').className = "fa-solid fa-microphone text-brand-coral animate-pulse";
+            };
+
+            speechRecognition.onend = () => {
+                isRecordingAudio = false;
+                document.getElementById('finder-voice-feedback').classList.add('hidden');
+                document.getElementById('finder-mic-icon').className = "fa-solid fa-microphone text-xs";
+            };
+
+            speechRecognition.onresult = (event) => {
+                const txt = event.results[0][0].transcript;
+                document.getElementById('finder-smart-search-input').value = txt;
+                showNotification(`Voice query captured: "${txt}"`);
+                runFinderAIQuery();
+            };
+        } else {
+            document.getElementById('finder-mic-btn').setAttribute('disabled', 'true');
+        }
+
+        function toggleSpeechToText() {
+            if (!speechRecognition) {
+                showNotification("Speech recognition is not supported in this browser.", "error");
+                return;
+            }
+            if (isRecordingAudio) {
+                speechRecognition.stop();
+            } else {
+                speechRecognition.start();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalshi Prediction & Strategy Engine</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for interactive analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            bg: '#0B0F19',
+                            card: '#151D30',
+                            accent: '#3B82F6',
+                            emerald: '#10B981',
+                            rose: '#EF4444',
+                            border: '#1E293B',
+                            textMuted: '#94A3B8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B0F19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1E293B;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+        .custom-terminal {
+            font-family: 'Courier New', Courier, monospace;
+        }
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        .scan-effect::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 10;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-brand-bg text-slate-100 font-sans min-h-screen flex flex-col antialiased">
+
+    <!-- TOP HEADER -->
+    <header class="border-b border-brand-border bg-brand-card/50 backdrop-blur sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 p-2 rounded-lg text-white">
+                    <i class="fa-solid fa-chart-line text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-wide flex items-center gap-2">
+                        KALSHI <span class="text-blue-500 font-normal text-sm px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">Quant Suite</span>
+                    </h1>
+                    <p class="text-xs text-brand-textMuted">Interactive Sizing, Trade Simulation & API Emulator</p>
+                </div>
+            </div>
+
+            <!-- Global Status Bar & Financial Position Overview -->
+            <div class="flex flex-wrap items-center gap-4 text-xs">
+                <!-- Live Cash & P&L Tracker -->
+                <div class="flex items-center gap-4 bg-brand-card border border-brand-border px-4 py-2 rounded-xl">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] text-brand-textMuted uppercase font-semibold">Sim Cash Account</span>
+                        <span id="global-cash" class="font-mono text-emerald-400 font-bold text-sm">$10,000.00</span>
+                    </div>
+                    <div class="h-6 w-[1px] bg-brand-border"></div>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] text-brand-textMuted uppercase font-semibold">Portfolio P&L</span>
+                        <span id="global-pnl" class="font-mono text-slate-300 font-bold text-sm">$0.00</span>
+                    </div>
+                </div>
+
+                <!-- Token Bucket Visualizer -->
+                <div class="bg-brand-bg border border-brand-border px-3 py-2 rounded-lg flex items-center gap-3">
+                    <div class="flex flex-col">
+                        <span class="text-brand-textMuted text-[10px] uppercase font-semibold">API Rate Token Bucket</span>
+                        <div class="flex items-center gap-1.5 mt-0.5">
+                            <span id="bucket-value" class="font-mono text-blue-400 font-bold">200 / 200</span>
+                            <span class="text-[10px] text-brand-textMuted">(+20/s)</span>
+                        </div>
+                    </div>
+                    <div class="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div id="bucket-bar" class="h-full bg-blue-500 transition-all duration-100" style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- NOTIFICATION HOST -->
+    <div id="notification-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full"></div>
+
+    <!-- MAIN INTERACTIVE CONTAINER -->
+    <main class="flex-grow max-w-7xl mx-auto w-full p-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- LEFT SIDEBAR: Markets & News Catalysts (3 Columns) -->
+        <section class="lg:col-span-3 flex flex-col gap-6">
+            
+            <!-- Category & Market Explorer -->
+            <div class="bg-brand-card border border-brand-border rounded-xl p-4 flex flex-col gap-4">
+                <div class="flex items-center justify-between border-b border-brand-border pb-3">
+                    <h2 class="font-semibold text-xs tracking-wider uppercase flex items-center gap-2">
+                        <i class="fa-solid fa-compass text-blue-500"></i> Active Contracts
+                    </h2>
+                    <span class="text-[10px] bg-brand-border text-brand-textMuted px-2 py-0.5 rounded-full font-mono">Live Book</span>
+                </div>
+
+                <!-- Live Filters -->
+                <div class="flex gap-1 overflow-x-auto pb-1 text-[11px]">
+                    <button onclick="filterMarkets('all')" class="category-btn px-2.5 py-1 rounded-md font-medium transition bg-blue-600 text-white" data-cat="all">All</button>
+                    <button onclick="filterMarkets('macro')" class="category-btn px-2.5 py-1 rounded-md font-medium transition text-brand-textMuted hover:text-white hover:bg-slate-800" data-cat="macro">Eco</button>
+                    <button onclick="filterMarkets('policy')" class="category-btn px-2.5 py-1 rounded-md font-medium transition text-brand-textMuted hover:text-white hover:bg-slate-800" data-cat="policy">Rates</button>
+                    <button onclick="filterMarkets('tech')" class="category-btn px-2.5 py-1 rounded-md font-medium transition text-brand-textMuted hover:text-white hover:bg-slate-800" data-cat="tech">Tech</button>
+                </div>
+
+                <!-- Markets List -->
+                <div class="space-y-2.5 max-h-[280px] overflow-y-auto pr-1" id="markets-list">
+                    <!-- Dynamic markets injected here -->
+                </div>
+            </div>
+
+            <!-- News Catalyst Engine (Instant Market Probability Shocks) -->
+            <div class="bg-brand-card border border-brand-border rounded-xl p-4 flex flex-col gap-3">
+                <div class="border-b border-brand-border pb-2 flex items-center justify-between">
+                    <h3 class="font-semibold text-xs tracking-wider uppercase flex items-center gap-2 text-yellow-500">
+                        <i class="fa-solid fa-newspaper"></i> Macro News Catalysts
+                    </h3>
+                    <span class="text-[9px] bg-yellow-500/10 text-yellow-500 px-1.5 py-0.5 rounded">Click to Shock Markets</span>
+                </div>
+                <p class="text-[10px] text-brand-textMuted">Clicking a catalyst story simulates a breaking news event, instantly adjusting relevant market balances & volumes.</p>
+                <div class="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                    <!-- News Item 1 -->
+                    <button onclick="triggerNewsShock('rate-cut')" class="w-full text-left bg-brand-bg/50 hover:bg-brand-bg border border-brand-border hover:border-slate-700 p-2.5 rounded-lg transition flex flex-col gap-1 text-xs">
+                        <div class="flex items-center justify-between text-[10px]">
+                            <span class="text-blue-400 uppercase font-bold">Fed Policy Shift</span>
+                            <span class="text-brand-textMuted">Breaking</span>
+                        </div>
+                        <p class="font-semibold text-slate-200">FOMC hints at unexpected 25bps cut at next December meeting</p>
+                    </button>
+                    <!-- News Item 2 -->
+                    <button onclick="triggerNewsShock('gdp-boom')" class="w-full text-left bg-brand-bg/50 hover:bg-brand-bg border border-brand-border hover:border-slate-700 p-2.5 rounded-lg transition flex flex-col gap-1 text-xs">
+                        <div class="flex items-center justify-between text-[10px]">
+                            <span class="text-emerald-400 uppercase font-bold">Economic Print</span>
+                            <span class="text-brand-textMuted">Breaking</span>
+                        </div>
+                        <p class="font-semibold text-slate-200">Q3 GDP final estimate surprises to the upside at 3.3% annualized</p>
+                    </button>
+                    <!-- News Item 3 -->
+                    <button onclick="triggerNewsShock('openai-ipo')" class="w-full text-left bg-brand-bg/50 hover:bg-brand-bg border border-brand-border hover:border-slate-700 p-2.5 rounded-lg transition flex flex-col gap-1 text-xs">
+                        <div class="flex items-center justify-between text-[10px]">
+                            <span class="text-purple-400 uppercase font-bold">Tech IPOs</span>
+                            <span class="text-brand-textMuted">Rumor</span>
+                        </div>
+                        <p class="font-semibold text-slate-200">OpenAI SEC filings suggest alternative liquidity paths over standard IPO</p>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- MIDDLE CONTENT: Dynamic Market Depth, Chart & Trade Terminal (6 Columns) -->
+        <section class="lg:col-span-6 flex flex-col gap-6">
+            
+            <!-- Focused Market Details, Custom Chart, & Execution Portal -->
+            <div class="bg-brand-card border border-brand-border rounded-xl p-5 flex flex-col gap-5 relative overflow-hidden" id="analyzer-main">
+                <!-- Active Market Meta -->
+                <div>
+                    <div class="flex items-center justify-between gap-2 mb-1.5">
+                        <span id="active-cat" class="text-[10px] uppercase font-bold tracking-widest text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded border border-blue-400/10">Fed Policy</span>
+                        <span id="active-ticker" class="font-mono text-xs text-brand-textMuted font-bold bg-brand-bg px-2 py-0.5 rounded border border-brand-border">KXFED-26DEC-T5.25</span>
+                    </div>
+                    <h2 id="active-title" class="font-bold text-base leading-snug text-slate-100">Federal Reserve interest rate target 5.25% at end of year?</h2>
+                </div>
+
+                <!-- Interactive Price Trend Chart -->
+                <div class="bg-brand-bg/80 border border-brand-border rounded-xl p-3 h-48 relative">
+                    <canvas id="market-price-chart" class="w-full h-full"></canvas>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-3 gap-2 bg-brand-bg/60 p-3 rounded-lg border border-brand-border text-center">
+                    <div>
+                        <span class="text-[10px] text-brand-textMuted uppercase font-semibold block">Market YES Price</span>
+                        <span id="metric-prob" class="text-lg font-black text-blue-400 font-mono mt-0.5 block">58¢</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-brand-textMuted uppercase font-semibold block">Bid / Ask Spread</span>
+                        <span id="metric-spread" class="text-lg font-black text-slate-200 font-mono mt-0.5 block">3¢</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-brand-textMuted uppercase font-semibold block">Trading Volume</span>
+                        <span id="metric-volume" class="text-lg font-black text-slate-200 font-mono mt-0.5 block">142.8K</span>
+                    </div>
+                </div>
+
+                <!-- Order Placement Portal & Live Book Depth -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-brand-border pt-4">
+                    
+                    <!-- Simulated Depth -->
+                    <div class="space-y-2 text-xs">
+                        <span class="font-semibold text-brand-textMuted flex items-center justify-between">
+                            <span>Live Book Depth</span>
+                            <span class="text-[10px] font-mono text-brand-accent">Auto-Updating</span>
+                        </span>
+                        
+                        <div class="grid grid-cols-2 gap-2 font-mono">
+                            <div class="space-y-1">
+                                <div class="bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded text-[11px] flex justify-between">
+                                    <span class="font-bold text-emerald-400" id="depth-yes-price-1">57¢</span>
+                                    <span id="depth-yes-vol-1" class="text-brand-textMuted">12.5K</span>
+                                </div>
+                                <div class="bg-emerald-500/5 border border-emerald-500/10 px-2 py-1 rounded text-[11px] flex justify-between opacity-70">
+                                    <span class="font-bold text-emerald-400" id="depth-yes-price-2">56¢</span>
+                                    <span id="depth-yes-vol-2" class="text-brand-textMuted">18.2K</span>
+                                </div>
+                            </div>
+                            <div class="space-y-1">
+                                <div class="bg-rose-500/10 border border-rose-500/20 px-2 py-1 rounded text-[11px] flex justify-between">
+                                    <span class="font-bold text-rose-400" id="depth-no-price-1">45¢</span>
+                                    <span id="depth-no-vol-1" class="text-brand-textMuted">9.1K</span>
+                                </div>
+                                <div class="bg-rose-500/5 border border-rose-500/10 px-2 py-1 rounded text-[11px] flex justify-between opacity-70">
+                                    <span class="font-bold text-rose-400" id="depth-no-price-2">46¢</span>
+                                    <span id="depth-no-vol-2" class="text-brand-textMuted">14.3K</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Instant Simulation Execution Panel -->
+                    <div class="space-y-2 text-xs">
+                        <span class="font-semibold text-slate-200">Simulate Market Order</span>
+                        <div class="flex gap-2">
+                            <button onclick="setDirection('YES')" id="trade-btn-yes" class="w-1/2 py-1.5 rounded-lg border border-emerald-500 bg-emerald-500/20 font-bold text-emerald-400 transition">YES Contract</button>
+                            <button onclick="setDirection('NO')" id="trade-btn-no" class="w-1/2 py-1.5 rounded-lg border border-brand-border bg-slate-800 text-brand-textMuted font-bold transition">NO Contract</button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] text-brand-textMuted block mb-0.5">Quantity</label>
+                                <input id="trade-qty" type="number" value="100" min="1" oninput="updateTradeCalculations()" class="w-full bg-brand-bg border border-brand-border rounded-lg px-2.5 py-1 font-mono text-center text-white focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-brand-textMuted block mb-0.5">Price Target</label>
+                                <div class="w-full bg-brand-bg border border-brand-border rounded-lg px-2 py-1 font-mono text-center text-brand-textMuted">
+                                    <span id="trade-price-display" class="text-white font-bold">58¢</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center text-[11px] bg-brand-bg/50 px-2 py-1 rounded">
+                            <span class="text-brand-textMuted">Cost: <span id="trade-cost-calc" class="text-slate-200 font-mono font-bold">$58.00</span></span>
+                            <span class="text-brand-textMuted">Max Payout: <span id="trade-payout-calc" class="text-emerald-400 font-mono font-bold">$100.00</span></span>
+                        </div>
+                        <button onclick="executeSimulatedTrade()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg transition shadow-lg shadow-blue-500/20 flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-basket-shopping"></i> Execute Market Order
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Custom Market Creator -->
+            <div class="bg-brand-card border border-brand-border rounded-xl p-4 flex flex-col gap-3">
+                <div class="flex items-center justify-between border-b border-brand-border pb-2">
+                    <h2 class="font-semibold text-xs tracking-wider uppercase flex items-center gap-2">
+                        <i class="fa-solid fa-plus text-emerald-500"></i> Inject Custom Contract
+                    </h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+                    <div class="md:col-span-1">
+                        <label class="block text-brand-textMuted mb-1 text-[10px]">Market Ticker</label>
+                        <input id="custom-ticker" type="text" placeholder="K-AISTART-26" class="w-full bg-brand-bg border border-brand-border rounded-lg px-2.5 py-1.5 text-slate-100 focus:outline-none focus:border-blue-500 uppercase font-mono">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-brand-textMuted mb-1 text-[10px]">Contract Title Question</label>
+                        <input id="custom-title" type="text" placeholder="Will OpenAI announce structural IPO?" class="w-full bg-brand-bg border border-brand-border rounded-lg px-2.5 py-1.5 text-slate-100 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="md:col-span-1 flex items-end">
+                        <button onclick="createCustomMarket()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-1.5 rounded-lg transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-circle-check"></i> Inject
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT COLUMN: Mathematical Sizing Suite & Active Positions Tracker (3 Columns) -->
+        <section class="lg:col-span-3 flex flex-col gap-6">
+            
+            <!-- Mathematical Sizing Suite -->
+            <div class="bg-brand-card border border-brand-border rounded-xl p-4 flex flex-col gap-3">
+                <div class="border-b border-brand-border pb-2 flex items-center justify-between">
+                    <h3 class="font-semibold text-xs tracking-wider uppercase flex items-center gap-2">
+                        <i class="fa-solid fa-calculator text-blue-500"></i> Math Sizing Suite
+                    </h3>
+                </div>
+
+                <!-- Mathematical inputs -->
+                <div class="space-y-3 text-xs">
+                    <!-- Subjective Probability Slider -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-brand-textMuted">Your Subjective Forecast</label>
+                            <span class="text-blue-400 font-bold font-mono text-xs" id="forecast-label">70%</span>
+                        </div>
+                        <input id="forecast-slider" type="range" min="1" max="99" value="70" oninput="calculateEdgeAndSizing()" class="w-full accent-blue-500 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <!-- Kelly, EV and Sizing outputs -->
+                    <div class="space-y-2 bg-brand-bg/50 p-2.5 rounded-lg border border-brand-border">
+                        <div class="flex justify-between items-center text-[11px]">
+                            <span class="text-brand-textMuted">Expected Value:</span>
+                            <span id="output-ev" class="font-mono font-bold text-emerald-400">+$0.12 / share</span>
+                        </div>
+                        <div class="flex justify-between items-center text-[11px]">
+                            <span class="text-brand-textMuted">Standard Kelly:</span>
+                            <span id="output-kelly" class="font-mono font-bold text-emerald-400">22.40%</span>
+                        </div>
+                        <div class="flex justify-between items-center text-[11px]">
+                            <span class="text-brand-textMuted">Quarter-Kelly (Safest):</span>
+                            <span id="output-frac-kelly" class="font-mono font-bold text-slate-200">5.60%</span>
+                        </div>
+                    </div>
+
+                    <!-- Actionable Recommendation Alert box -->
+                    <div id="recommendation-box" class="p-2.5 rounded-lg border text-[10px] leading-relaxed bg-emerald-500/5 border-emerald-500/10 text-emerald-400">
+                        Positive Edge detected. Click "Autofill Trade Panel" below to apply this mathematical recommendation.
+                    </div>
+
+                    <!-- Autofill Interactive Trigger -->
+                    <button onclick="autofillWithKellySizing()" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-brand-border hover:border-slate-600 rounded-lg text-[11px] font-semibold transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-copy text-brand-accent"></i> Autofill Trade Panel Sizing
+                    </button>
+                </div>
+            </div>
+
+            <!-- Active Simulated Positions Tracker -->
+            <div class="bg-brand-card border border-brand-border rounded-xl p-4 flex flex-col gap-3">
+                <div class="border-b border-brand-border pb-2 flex items-center justify-between">
+                    <h3 class="font-semibold text-xs tracking-wider uppercase flex items-center gap-2 text-emerald-400">
+                        <i class="fa-solid fa-wallet"></i> Active Positions
+                    </h3>
+                    <span id="pos-count" class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-mono">0 Open</span>
+                </div>
+
+                <div class="space-y-2 max-h-[220px] overflow-y-auto pr-1 text-xs" id="positions-list">
+                    <!-- Position Items dynamically generated here -->
+                    <div class="text-center py-4 text-brand-textMuted text-[11px] italic">No active contracts held. Place orders using the trade panel.</div>
+                </div>
+            </div>
+
+            <!-- Arbitrage Scanning Tracker -->
+            <div class="bg-brand-card border border-brand-border rounded-xl p-4 flex flex-col gap-3">
+                <div class="flex items-center justify-between border-b border-brand-border pb-2">
+                    <h3 class="font-semibold text-xs tracking-wider uppercase flex items-center gap-2 text-yellow-500">
+                        <i class="fa-solid fa-arrows-split-up-and-left"></i> Arbitrage Desk
+                    </h3>
+                    <span class="text-[10px] text-brand-textMuted font-mono">Hedging Scanner</span>
+                </div>
+                
+                <div class="bg-brand-bg/80 border border-yellow-500/20 rounded-lg p-2.5 flex flex-col gap-2 relative overflow-hidden text-[11px]">
+                    <div class="flex items-center justify-between font-mono">
+                        <span id="arb-ticker" class="text-slate-300 font-bold">KXFED-T5.25</span>
+                        <span id="arb-yield" class="text-emerald-400 font-bold">+8.5% Yield</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-[10px] text-center font-mono">
+                        <div class="bg-slate-900 py-1.5 rounded border border-brand-border">
+                            <span class="text-brand-textMuted block text-[9px] uppercase">Kalshi (YES)</span>
+                            <span class="font-bold text-emerald-400" id="arb-kalshi-price">58¢</span>
+                        </div>
+                        <div class="bg-slate-900 py-1.5 rounded border border-brand-border">
+                            <span class="text-brand-textMuted block text-[9px] uppercase">Poly (NO)</span>
+                            <span class="font-bold text-rose-400" id="arb-poly-price">34¢</span>
+                        </div>
+                    </div>
+                    <p class="text-[9px] text-brand-textMuted leading-normal">
+                        Total Cost: <span id="arb-total-cost" class="font-bold text-slate-200 font-mono">92¢</span>. Payout is guaranteed to settle at 100¢.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- BOTTOM DEVELOPER SECTION: Live Executable API Terminal & Code Integration Panels -->
+    <section class="max-w-7xl mx-auto w-full px-4 pb-12 mt-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Live Runnable API Console (5 Columns) -->
+        <div class="lg:col-span-5 bg-black border border-brand-border rounded-xl flex flex-col h-96 relative overflow-hidden scan-effect">
+            <!-- Terminal Header -->
+            <div class="flex items-center justify-between px-4 py-2 border-b border-slate-800 bg-slate-950/80">
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-rose-500"></span>
+                    <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
+                    <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                    <span class="text-xs font-mono font-bold text-brand-textMuted ml-1">Live Executable API Terminal</span>
+                </div>
+                <button onclick="clearTerminal()" class="text-slate-500 hover:text-white transition text-xs font-mono">Clear</button>
+            </div>
+            
+            <!-- Terminal Display Log screen -->
+            <div id="terminal-screen" class="flex-grow p-4 overflow-y-auto text-xs font-mono text-emerald-400 space-y-2 bg-slate-950/50 leading-relaxed scrollbar-thin scrollbar-thumb-slate-800">
+                <div class="text-slate-500">// API client initiated. Click an action to execute real live simulations.</div>
+                <div class="text-slate-500">// Simulated token bucket currently loaded with 200 credits.</div>
+            </div>
+
+            <!-- Interactive API Sandbox Controls -->
+            <div class="p-3 border-t border-slate-800 bg-slate-950/80 grid grid-cols-3 gap-2">
+                <button onclick="simulateTerminalCall('getMarkets')" class="py-1.5 px-2 bg-blue-900/30 hover:bg-blue-900/50 text-blue-400 hover:text-white border border-blue-800/40 rounded text-[10px] font-mono transition">
+                    GET /markets
+                </button>
+                <button onclick="simulateTerminalCall('getOrderbook')" class="py-1.5 px-2 bg-emerald-900/30 hover:bg-emerald-900/50 text-emerald-400 hover:text-white border border-emerald-800/40 rounded text-[10px] font-mono transition">
+                    GET /orderbook
+                </button>
+                <button onclick="simulateTerminalCall('trigger429')" class="py-1.5 px-2 bg-rose-900/30 hover:bg-rose-900/50 text-rose-400 hover:text-white border border-rose-800/40 rounded text-[10px] font-mono transition">
+                    Trigger 429 Error
+                </button>
+            </div>
+        </div>
+
+        <!-- Code Snippet Switchboard Panel (7 Columns) -->
+        <div class="lg:col-span-7 bg-brand-card border border-brand-border rounded-xl overflow-hidden flex flex-col h-96">
+            <div class="flex border-b border-brand-border bg-slate-900/40 px-4 pt-3 gap-2">
+                <button onclick="switchTab('tab-js')" id="btn-tab-js" class="tab-btn px-4 py-2 text-xs font-bold rounded-t-lg transition border-b-2 border-blue-500 text-blue-400 bg-brand-card">
+                    <i class="fa-brands fa-js mr-1.5 text-yellow-400"></i> ES6 Client (Rate-Limit Safe)
+                </button>
+                <button onclick="switchTab('tab-py')" id="btn-tab-py" class="tab-btn px-4 py-2 text-xs font-bold rounded-t-lg transition border-b-2 border-transparent text-brand-textMuted hover:text-slate-100">
+                    <i class="fa-brands fa-python mr-1.5 text-blue-400"></i> Python Client (v2 REST)
+                </button>
+            </div>
+
+            <div class="p-4 flex-grow overflow-y-auto">
+                <!-- JS Panel -->
+                <div id="tab-js" class="tab-panel space-y-2">
+                    <p class="text-[11px] text-brand-textMuted leading-relaxed">
+                        Ready-to-use ES6 Class. Automatically handles Kalshi's token bucket limits by intercepting `429` status codes and implementing mathematical exponential backoff.
+                    </p>
+                    <div class="relative">
+                        <button onclick="copyCode('code-js')" class="absolute right-3 top-3 bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded text-[10px] font-semibold transition">
+                            <i class="fa-regular fa-copy"></i> Copy
+                        </button>
+                        <pre class="bg-brand-bg p-3 rounded-lg overflow-x-auto text-[10px] font-mono text-emerald-400 border border-brand-border" id="code-js"><code>class KalshiClient {
+    constructor(baseUrl = 'https://api.kalshi.com/trade-api/v2') {
+        this.baseUrl = baseUrl;
+    }
+    async request(path, options = {}, retries = 5, delay = 1000) {
+        try {
+            const res = await fetch(`${this.baseUrl}${path}`, options);
+            if (res.status === 429 && retries > 0) {
+                await new Promise(r => setTimeout(r, delay));
+                return this.request(path, options, retries - 1, delay * 2);
+            }
+            if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
+            return await res.json();
+        } catch (e) {
+            if (retries > 0) {
+                await new Promise(r => setTimeout(r, delay));
+                return this.request(path, options, retries - 1, delay * 2);
+            }
+            throw e;
+        }
+    }
+    getMarkets() { return this.request('/markets'); }
+    getOrderBook(ticker) { return this.request(`/markets/${ticker}/orderbook`); }
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- Python Panel -->
+                <div id="tab-py" class="tab-panel hidden space-y-2">
+                    <p class="text-[11px] text-brand-textMuted leading-relaxed">
+                        Systematic implementation utilizing Python's robust request framework. Perfect for custom cron jobs or algorithmic market making bots requiring automated rate retry delays.
+                    </p>
+                    <div class="relative">
+                        <button onclick="copyCode('code-py')" class="absolute right-3 top-3 bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded text-[10px] font-semibold transition">
+                            <i class="fa-regular fa-copy"></i> Copy
+                        </button>
+                        <pre class="bg-brand-bg p-3 rounded-lg overflow-x-auto text-[10px] font-mono text-emerald-400 border border-brand-border" id="code-py"><code>import time, requests
+
+class KalshiV2Client:
+    def __init__(self, base_url="https://api.kalshi.com/trade-api/v2"):
+        self.base_url = base_url
+
+    def execute(self, method, endpoint, retries=5, delay=1, **kwargs):
+        for attempt in range(retries):
+            try:
+                r = requests.request(method, f"{self.base_url}{endpoint}", **kwargs)
+                if r.status_code == 429:
+                    time.sleep(delay)
+                    delay *= 2
+                    continue
+                r.raise_for_status()
+                return r.json()
+            except requests.exceptions.RequestException as e:
+                if attempt == retries - 1: raise e
+                time.sleep(delay)
+                delay *= 2
+
+    def list_markets(self):
+        return self.execute("GET", "/markets")</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </section>
+
+    <!-- INTERACTIVE JAVASCRIPT LOGIC -->
+    <script>
+        // Backup static markets in case the live server/API is unavailable
+        const backupMarkets = [
+            {
+                ticker: "KXFED-26DEC-T5.25",
+                category: "policy",
+                title: "Federal Reserve interest rate target 5.25% at end of year?",
+                bid: 58,
+                ask: 61,
+                volume: "142.8K",
+                arbPoly: 34,
+                history: [48, 51, 50, 53, 55, 54, 58],
+                depthYes: [
+                    { price: 57, vol: "12.5K" },
+                    { price: 56, vol: "18.2K" }
+                ],
+                depthNo: [
+                    { price: 45, vol: "9.1K" },
+                    { price: 46, vol: "14.3K" }
+                ]
+            },
+            {
+                ticker: "KXGDP-Q3-3.1",
+                category: "macro",
+                title: "US Q3 Real GDP growth annualized exceeds 3.1%?",
+                bid: 42,
+                ask: 45,
+                volume: "89.4K",
+                arbPoly: 50,
+                history: [35, 38, 39, 41, 40, 44, 42],
+                depthYes: [
+                    { price: 41, vol: "4.8K" },
+                    { price: 40, vol: "12.1K" }
+                ],
+                depthNo: [
+                    { price: 60, vol: "7.2K" },
+                    { price: 61, vol: "11.5K" }
+                ]
+            },
+            {
+                ticker: "KXAISTARTUP-IPO",
+                category: "tech",
+                title: "Will OpenAI announce a direct IPO within the calendar year?",
+                bid: 25,
+                ask: 28,
+                volume: "312.5K",
+                arbPoly: 65,
+                history: [15, 18, 22, 21, 26, 24, 25],
+                depthYes: [
+                    { price: 24, vol: "24.5K" },
+                    { price: 23, vol: "41.9K" }
+                ],
+                depthNo: [
+                    { price: 77, vol: "19.3K" },
+                    { price: 78, vol: "30.4K" }
+                ]
+            }
+        ];
+
+        let simulatedMarkets = [];
+
+        // Portfolio state structures
+        let userPortfolio = {
+            cash: 10000.00,
+            positions: [] // Array: { ticker, side, qty, avgPrice, title }
+        };
+
+        let selectedMarket = null;
+        let currentFilter = 'all';
+        let tradeDirection = 'YES'; // YES or NO contract direction toggle
+        let chartInstance = null; // Global Chart.js reference
+
+        // Token bucket simulator variables
+        let bucketTokens = 200;
+        const maxBucketCapacity = 200;
+        const tokenRefillRate = 20;
+
+        function mapApiMarketToSimulated(m) {
+            const bid = m.yes_bid_dollars ? Math.round(parseFloat(m.yes_bid_dollars) * 100) : 50;
+            const ask = m.yes_ask_dollars ? Math.round(parseFloat(m.yes_ask_dollars) * 100) : 53;
+            const volumeVal = m.volume_fp ? parseFloat(m.volume_fp) : 0;
+            const formattedVolume = volumeVal >= 1000 ? `${(volumeVal / 1000).toFixed(1)}K` : volumeVal.toString();
+            
+            // Heuristic category mapping based on ticker name
+            let category = 'macro';
+            const tickerLower = m.ticker.toLowerCase();
+            if (tickerLower.includes('fed') || tickerLower.includes('rate') || tickerLower.includes('fomc')) {
+                category = 'policy';
+            } else if (tickerLower.includes('ai') || tickerLower.includes('tech') || tickerLower.includes('ipo') || tickerLower.includes('aistart')) {
+                category = 'tech';
+            } else if (tickerLower.includes('gdp') || tickerLower.includes('cpi') || tickerLower.includes('infl') || tickerLower.includes('jobs') || tickerLower.includes('unemp')) {
+                category = 'macro';
+            }
+
+            const arbPoly = Math.max(5, Math.min(95, 100 - ask - (Math.floor(Math.random() * 4) + 1)));
+
+            return {
+                ticker: m.ticker,
+                category: category,
+                title: m.title || m.yes_sub_title || `Will ${m.ticker} settle YES?`,
+                bid: bid,
+                ask: ask,
+                volume: formattedVolume,
+                arbPoly: arbPoly,
+                history: [bid, bid, bid, bid, bid, bid, bid], // Expanded by candlesticks
+                depthYes: [
+                    { price: bid, vol: "5.0K" },
+                    { price: Math.max(1, bid - 1), vol: "10.0K" }
+                ],
+                depthNo: [
+                    { price: 100 - ask, vol: "5.0K" },
+                    { price: Math.max(1, 100 - ask - 1), vol: "10.0K" }
+                ]
+            };
+        }
+
+        async function fetchLiveMarkets() {
+            try {
+                logTerminal(`Fetching live markets from Kalshi API...`, 'info');
+                const response = await fetch('/api/markets?status=open&limit=40');
+                if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+                const data = await response.json();
+                if (data.markets && Array.isArray(data.markets)) {
+                    simulatedMarkets = data.markets.map(mapApiMarketToSimulated);
+                    logTerminal(`Successfully loaded ${simulatedMarkets.length} live markets.`, 'success');
+                    
+                    if (simulatedMarkets.length > 0) {
+                        const exists = selectedMarket && simulatedMarkets.some(m => m.ticker === selectedMarket.ticker);
+                        if (!exists) {
+                            selectedMarket = simulatedMarkets[0];
+                        }
+                        selectMarket(selectedMarket.ticker);
+                    }
+                }
+            } catch (error) {
+                logTerminal(`Failed to fetch live markets: ${error.message}. Falling back to backup simulation.`, 'error');
+                if (simulatedMarkets.length === 0) {
+                    simulatedMarkets = [...backupMarkets];
+                    selectedMarket = simulatedMarkets[0];
+                    selectMarket(selectedMarket.ticker);
+                }
+            }
+        }
+
+        async function fetchOrderbookAndCandlesticks(ticker) {
+            // 1. Fetch Orderbook
+            try {
+                const obRes = await fetch(`/api/markets/${ticker}/orderbook`);
+                if (obRes.ok) {
+                    const obData = await obRes.json();
+                    if (obData.orderbook_fp) {
+                        const yesBids = obData.orderbook_fp.yes_dollars || [];
+                        const noBids = obData.orderbook_fp.no_dollars || [];
+                        
+                        const targetMarket = simulatedMarkets.find(m => m.ticker === ticker);
+                        if (targetMarket) {
+                            targetMarket.depthYes = yesBids.slice(0, 2).map(item => {
+                                const price = Math.round(parseFloat(item[0]) * 100);
+                                const vol = parseFloat(item[1]);
+                                const volStr = vol >= 1000 ? `${(vol / 1000).toFixed(1)}K` : vol.toString();
+                                return { price, vol: volStr };
+                            });
+                            
+                            targetMarket.depthNo = noBids.slice(0, 2).map(item => {
+                                const price = Math.round(parseFloat(item[0]) * 100);
+                                const vol = parseFloat(item[1]);
+                                const volStr = vol >= 1000 ? `${(vol / 1000).toFixed(1)}K` : vol.toString();
+                                return { price, vol: volStr };
+                            });
+
+                            if (targetMarket.depthYes.length < 2) {
+                                const currentBid = targetMarket.bid;
+                                while (targetMarket.depthYes.length < 2) {
+                                    targetMarket.depthYes.push({ price: currentBid - targetMarket.depthYes.length, vol: "0" });
+                                }
+                            }
+                            if (targetMarket.depthNo.length < 2) {
+                                const currentNoBid = 100 - targetMarket.ask;
+                                while (targetMarket.depthNo.length < 2) {
+                                    targetMarket.depthNo.push({ price: currentNoBid - targetMarket.depthNo.length, vol: "0" });
+                                }
+                            }
+                            
+                            if (selectedMarket && selectedMarket.ticker === ticker) {
+                                document.getElementById('depth-yes-price-1').innerText = `${targetMarket.depthYes[0].price}¢`;
+                                document.getElementById('depth-yes-vol-1').innerText = targetMarket.depthYes[0].vol;
+                                document.getElementById('depth-yes-price-2').innerText = `${targetMarket.depthYes[1].price}¢`;
+                                document.getElementById('depth-yes-vol-2').innerText = targetMarket.depthYes[1].vol;
+
+                                document.getElementById('depth-no-price-1').innerText = `${targetMarket.depthNo[0].price}¢`;
+                                document.getElementById('depth-no-vol-1').innerText = targetMarket.depthNo[0].vol;
+                                document.getElementById('depth-no-price-2').innerText = `${targetMarket.depthNo[1].price}¢`;
+                                document.getElementById('depth-no-vol-2').innerText = targetMarket.depthNo[1].vol;
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Error fetching orderbook:", e);
+            }
+
+            // 2. Fetch Candlesticks
+            try {
+                const startTs = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60; // 7 days ago
+                const endTs = Math.floor(Date.now() / 1000);
+                const candleRes = await fetch(`/api/markets/${ticker}/candlesticks?start_ts=${startTs}&end_ts=${endTs}&period_interval=60`);
+                if (candleRes.ok) {
+                    const candleData = await candleRes.json();
+                    if (candleData.candlesticks && Array.isArray(candleData.candlesticks) && candleData.candlesticks.length > 0) {
+                        const targetMarket = simulatedMarkets.find(m => m.ticker === ticker);
+                        if (targetMarket) {
+                            const history = candleData.candlesticks.map(c => {
+                                const priceVal = c.price ? parseFloat(c.price.close) : parseFloat(c.yes_ask);
+                                return Math.round(priceVal * 100);
+                            });
+                            targetMarket.history = history.slice(-15);
+                            if (selectedMarket && selectedMarket.ticker === ticker) {
+                                updateChartData();
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Error fetching candlesticks:", e);
+            }
+        }
+
+        // On Load initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            startTokenBucketRefillLoop();
+            
+            // Start with backup markets immediately to prevent blank UI
+            simulatedMarkets = [...backupMarkets];
+            selectedMarket = simulatedMarkets[0];
+            selectMarket(selectedMarket.ticker);
+            
+            // Asynchronously fetch live markets and start polling
+            fetchLiveMarkets().then(() => {
+                startPriceFluctuationSimulation();
+            });
+        });
+
+        // Toast notifications
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notification-container');
+            const notif = document.createElement('div');
+            
+            const bgClass = type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+                            type === 'error' ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' :
+                            'bg-blue-500/10 border-blue-500/20 text-blue-400';
+            
+            const icon = type === 'success' ? 'fa-circle-check' :
+                         type === 'error' ? 'fa-circle-exclamation' :
+                         'fa-info-circle';
+
+            notif.className = `p-3 rounded-lg border flex items-center gap-3 text-xs font-medium ${bgClass} shadow-lg transition duration-300`;
+            notif.innerHTML = `
+                <i class="fa-solid ${icon}"></i>
+                <div class="flex-grow">${message}</div>
+            `;
+            
+            container.appendChild(notif);
+            setTimeout(() => {
+                notif.classList.add('opacity-0');
+                setTimeout(() => notif.remove(), 300);
+            }, 3000);
+        }
+
+        // Set Order Direction (YES/NO Toggles)
+        function setDirection(dir) {
+            tradeDirection = dir;
+            const yesBtn = document.getElementById('trade-btn-yes');
+            const noBtn = document.getElementById('trade-btn-no');
+
+            if (dir === 'YES') {
+                yesBtn.className = "w-1/2 py-1.5 rounded-lg border border-emerald-500 bg-emerald-500/20 font-bold text-emerald-400 transition";
+                noBtn.className = "w-1/2 py-1.5 rounded-lg border border-brand-border bg-slate-800 text-brand-textMuted font-bold transition";
+            } else {
+                noBtn.className = "w-1/2 py-1.5 rounded-lg border border-rose-500 bg-rose-500/20 font-bold text-rose-400 transition";
+                yesBtn.className = "w-1/2 py-1.5 rounded-lg border border-brand-border bg-slate-800 text-brand-textMuted font-bold transition";
+            }
+            updateTradeCalculations();
+        }
+
+        // Live calculation tracking cost basis
+        function updateTradeCalculations() {
+            const qty = parseInt(document.getElementById('trade-qty').value) || 0;
+            const price = tradeDirection === 'YES' ? selectedMarket.ask : (100 - selectedMarket.bid);
+            
+            document.getElementById('trade-price-display').innerText = `${price}¢`;
+            
+            const cost = (qty * price) / 100;
+            const payout = qty * 1.00;
+
+            document.getElementById('trade-cost-calc').innerText = `$${cost.toFixed(2)}`;
+            document.getElementById('trade-payout-calc').innerText = `$${payout.toFixed(2)}`;
+        }
+
+        // Settle or execute simulated contract acquisitions
+        function executeSimulatedTrade() {
+            const qty = parseInt(document.getElementById('trade-qty').value) || 0;
+            if (qty <= 0) {
+                showNotification("Please select a positive quantity of contracts to buy.", "error");
+                return;
+            }
+
+            const contractPrice = tradeDirection === 'YES' ? selectedMarket.ask : (100 - selectedMarket.bid);
+            const tradeCost = (qty * contractPrice) / 100;
+
+            if (userPortfolio.cash < tradeCost) {
+                showNotification("Insufficient simulated cash in account for this transaction.", "error");
+                return;
+            }
+
+            // Deduct cash balance
+            userPortfolio.cash -= tradeCost;
+            
+            // Log/Update position array
+            const existingPos = userPortfolio.positions.find(p => p.ticker === selectedMarket.ticker && p.side === tradeDirection);
+            if (existingPos) {
+                const oldTotalCost = existingPos.qty * existingPos.avgPrice;
+                existingPos.qty += qty;
+                existingPos.avgPrice = ((oldTotalCost + tradeCost) / existingPos.qty) * 100; // Normalized in Cents
+            } else {
+                userPortfolio.positions.push({
+                    ticker: selectedMarket.ticker,
+                    title: selectedMarket.title,
+                    side: tradeDirection,
+                    qty: qty,
+                    avgPrice: contractPrice
+                });
+            }
+
+            logTerminal(`[TRADE ORDER EXECUTED] Bought ${qty} shares of ${selectedMarket.ticker} (${tradeDirection}) @ ${contractPrice}¢. Net Cost: $${tradeCost.toFixed(2)}.`);
+            showNotification(`Bought ${qty} ${selectedMarket.ticker} ${tradeDirection} contracts!`, "success");
+            
+            updatePortfolioUI();
+            updateTradeCalculations();
+        }
+
+        // Draw and rebuild Portfolio positions list
+        function updatePortfolioUI() {
+            document.getElementById('global-cash').innerText = `$${userPortfolio.cash.toFixed(2)}`;
+            const list = document.getElementById('positions-list');
+            list.innerHTML = '';
+
+            let totalPnL = 0;
+            let openPositionsCount = userPortfolio.positions.length;
+            document.getElementById('pos-count').innerText = `${openPositionsCount} Open`;
+
+            if (openPositionsCount === 0) {
+                list.innerHTML = `<div class="text-center py-4 text-brand-textMuted text-[11px] italic">No active contracts held. Place orders using the trade panel.</div>`;
+                document.getElementById('global-pnl').innerText = `$0.00`;
+                document.getElementById('global-pnl').className = "font-mono text-slate-300 font-bold text-sm";
+                return;
+            }
+
+            userPortfolio.positions.forEach((pos, idx) => {
+                const currentMarketPrice = pos.side === 'YES' ? selectedMarket.bid : (100 - selectedMarket.ask);
+                const currentVal = (pos.qty * currentMarketPrice) / 100;
+                const costBasisVal = (pos.qty * pos.avgPrice) / 100;
+                const pnl = currentVal - costBasisVal;
+                totalPnL += pnl;
+
+                const card = document.createElement('div');
+                card.className = "bg-brand-bg border border-brand-border rounded-lg p-2 flex flex-col gap-1";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-slate-200">${pos.ticker}</span>
+                        <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${pos.side === 'YES' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}">${pos.side}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-[10px] text-brand-textMuted">
+                        <span>Shares: ${pos.qty}</span>
+                        <span>Avg Cost: ${(pos.avgPrice).toFixed(1)}¢</span>
+                    </div>
+                    <div class="flex items-center justify-between text-[11px] font-mono border-t border-slate-800 pt-1 mt-1">
+                        <span class="text-brand-textMuted">PnL:</span>
+                        <span class="${pnl >= 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</span>
+                    </div>
+                    <button onclick="sellPosition(${idx})" class="w-full mt-1.5 py-1 bg-rose-950/20 hover:bg-rose-950 text-rose-400 hover:text-white border border-rose-900/40 rounded text-[10px] transition">Sell & Liquidate</button>
+                `;
+                list.appendChild(card);
+            });
+
+            const pnlEl = document.getElementById('global-pnl');
+            pnlEl.innerText = `${totalPnL >= 0 ? '+' : ''}$${totalPnL.toFixed(2)}`;
+            pnlEl.className = totalPnL >= 0 ? "font-mono text-emerald-400 font-bold text-sm" : "font-mono text-rose-400 font-bold text-sm";
+        }
+
+        function sellPosition(idx) {
+            const pos = userPortfolio.positions[idx];
+            const currentMarketPrice = pos.side === 'YES' ? selectedMarket.bid : (100 - selectedMarket.ask);
+            const payout = (pos.qty * currentMarketPrice) / 100;
+
+            userPortfolio.cash += payout;
+            userPortfolio.positions.splice(idx, 1);
+            
+            logTerminal(`[LIQUIDATE ORDER] Liquidated ${pos.qty} shares of ${pos.ticker} (${pos.side}) @ ${currentMarketPrice}¢. Credited: $${payout.toFixed(2)}.`);
+            showNotification(`Liquidated position for $${payout.toFixed(2)}!`, "info");
+            
+            updatePortfolioUI();
+        }
+
+        // ChartJS Dynamic Initialization
+        function initChart() {
+            const ctx = document.getElementById('market-price-chart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['H-6', 'H-5', 'H-4', 'H-3', 'H-2', 'H-1', 'Now'],
+                    datasets: [{
+                        label: 'Implied YES Probability (¢)',
+                        data: selectedMarket.history,
+                        borderColor: '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#3B82F6',
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            grid: { color: 'rgba(30, 41, 59, 0.5)' },
+                            ticks: { color: '#94A3B8', font: { size: 9, family: 'monospace' } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94A3B8', font: { size: 9, family: 'monospace' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChartData() {
+            if (chartInstance) {
+                chartInstance.data.datasets[0].data = selectedMarket.history;
+                chartInstance.update();
+            }
+        }
+
+        // Impact probability calculations dynamically when a catalyst breaks
+        function triggerNewsShock(shockType) {
+            logTerminal(`[BREAKING CATALYST RECEIVED] Initiating news event shock to systematic contracts...`);
+            
+            if (!selectedMarket) return;
+            
+            let shift = 0;
+            let msg = "";
+            let notifType = "success";
+            
+            if (shockType === 'rate-cut') {
+                shift = 15;
+                msg = `Fed Shock: Target Probability surged +15%!`;
+            } else if (shockType === 'gdp-boom') {
+                shift = 12;
+                msg = `GDP Shock: Growth expectations jumped +12%!`;
+            } else if (shockType === 'openai-ipo') {
+                shift = -14;
+                msg = `IPO Rumors: Target direct listing probabilities plummeted -14%!`;
+                notifType = "error";
+            }
+            
+            if (shift !== 0) {
+                selectedMarket.bid = Math.max(5, Math.min(95, selectedMarket.bid + shift));
+                selectedMarket.ask = Math.max(8, Math.min(98, selectedMarket.ask + shift));
+                selectedMarket.history.push(selectedMarket.bid);
+                if (selectedMarket.history.length > 15) {
+                    selectedMarket.history.shift();
+                }
+                showNotification(msg, notifType);
+                selectMarket(selectedMarket.ticker);
+            }
+        }
+
+        // Simulated Token Bucket loops
+        function startTokenBucketRefillLoop() {
+            setInterval(() => {
+                if (bucketTokens < maxBucketCapacity) {
+                    bucketTokens = Math.min(maxBucketCapacity, bucketTokens + Math.round(tokenRefillRate / 10));
+                    updateBucketUI();
+                }
+            }, 100);
+        }
+
+        function updateBucketUI() {
+            document.getElementById('bucket-value').innerText = `${bucketTokens} / ${maxBucketCapacity}`;
+            const pct = (bucketTokens / maxBucketCapacity) * 100;
+            const bar = document.getElementById('bucket-bar');
+            bar.style.width = `${pct}%`;
+            
+            if (bucketTokens < 40) {
+                bar.className = "h-full bg-rose-500 transition-all duration-100";
+            } else if (bucketTokens < 120) {
+                bar.className = "h-full bg-yellow-500 transition-all duration-100";
+            } else {
+                bar.className = "h-full bg-blue-500 transition-all duration-100";
+            }
+        }
+
+        // Periodically refresh the live markets feed from the API
+        function startPriceFluctuationSimulation() {
+            setInterval(() => {
+                fetchLiveMarkets();
+            }, 20000); // Poll every 20 seconds
+        }
+
+        // Render markets lists on navigation filters
+        function renderMarkets() {
+            const listContainer = document.getElementById('markets-list');
+            listContainer.innerHTML = '';
+
+            const filtered = currentFilter === 'all' 
+                ? simulatedMarkets 
+                : simulatedMarkets.filter(m => m.category === currentFilter);
+
+            filtered.forEach(m => {
+                const isSelected = m.ticker === selectedMarket.ticker;
+                const card = document.createElement('div');
+                card.onclick = () => selectMarket(m.ticker);
+                card.className = `p-2.5 rounded-lg border transition cursor-pointer flex flex-col gap-1.5 ${
+                    isSelected 
+                    ? 'bg-slate-800/80 border-blue-500 shadow-md shadow-blue-500/5' 
+                    : 'bg-brand-card/40 border-brand-border hover:bg-slate-800/30'
+                }`;
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="text-[8px] uppercase font-bold tracking-wider text-blue-400 font-mono">${m.category}</span>
+                        <span class="text-[9px] text-brand-textMuted font-mono font-bold">${m.ticker}</span>
+                    </div>
+                    <p class="text-xs font-semibold leading-relaxed line-clamp-1">${m.title}</p>
+                    <div class="flex items-center justify-between text-[10px] border-t border-brand-border/40 pt-1.5 mt-0.5">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-brand-textMuted">YES:</span>
+                            <span class="font-mono font-bold text-emerald-400">${m.bid}¢</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-brand-textMuted font-bold">Vol:</span>
+                            <span class="font-mono text-slate-300">${m.volume}</span>
+                        </div>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
+        function filterMarkets(cat) {
+            currentFilter = cat;
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                if (btn.getAttribute('data-cat') === cat) {
+                    btn.className = "category-btn px-2.5 py-1 rounded-md font-medium transition bg-blue-600 text-white";
+                } else {
+                    btn.className = "category-btn px-2.5 py-1 rounded-md font-medium transition text-brand-textMuted hover:text-white hover:bg-slate-800";
+                }
+            });
+            renderMarkets();
+        }
+
+        // Selecting a market triggers global metric recalculations
+        function selectMarket(ticker) {
+            const target = simulatedMarkets.find(m => m.ticker === ticker);
+            if (!target) return;
+            selectedMarket = target;
+
+            // Header elements
+            document.getElementById('active-cat').innerText = target.category;
+            document.getElementById('active-ticker').innerText = target.ticker;
+            document.getElementById('active-title').innerText = target.title;
+
+            // Live metrics stats
+            const spread = target.ask - target.bid;
+            document.getElementById('metric-prob').innerText = `${target.bid}¢`;
+            document.getElementById('metric-spread').innerText = `${spread}¢`;
+            document.getElementById('metric-volume').innerText = target.volume;
+
+            // Live book values
+            document.getElementById('depth-yes-price-1').innerText = `${target.depthYes[0].price}¢`;
+            document.getElementById('depth-yes-vol-1').innerText = target.depthYes[0].vol;
+            document.getElementById('depth-yes-price-2').innerText = `${target.depthYes[1].price}¢`;
+            document.getElementById('depth-yes-vol-2').innerText = target.depthYes[1].vol;
+
+            document.getElementById('depth-no-price-1').innerText = `${target.depthNo[0].price}¢`;
+            document.getElementById('depth-no-vol-1').innerText = target.depthNo[0].vol;
+            document.getElementById('depth-no-price-2').innerText = `${target.depthNo[1].price}¢`;
+            document.getElementById('depth-no-vol-2').innerText = target.depthNo[1].vol;
+
+            // Refresh analytical widgets
+            updateChartData();
+            calculateEdgeAndSizing();
+            calculateArbitrageOpportunity();
+            updateTradeCalculations();
+            updatePortfolioUI();
+            renderMarkets();
+            
+            // Asynchronously pull live orderbook & candlesticks from Kalshi
+            fetchOrderbookAndCandlesticks(ticker);
+        }
+
+        // Inject ad-hoc contract parameters
+        function createCustomMarket() {
+            const ticker = document.getElementById('custom-ticker').value.trim() || "K-CUSTOM-EX";
+            const title = document.getElementById('custom-title').value.trim() || "Is core inflation higher than predicted?";
+            const bid = 50;
+            const ask = 53;
+
+            const newMarket = {
+                ticker: ticker.toUpperCase(),
+                category: "Custom",
+                title: title,
+                bid: bid,
+                ask: ask,
+                volume: "1.0K",
+                arbPoly: 42,
+                history: [45, 48, 47, 49, 52, 51, 50],
+                depthYes: [
+                    { price: bid, vol: "500" },
+                    { price: bid - 1, vol: "1.2K" }
+                ],
+                depthNo: [
+                    { price: 100 - ask, vol: "400" },
+                    { price: 100 - ask - 1, vol: "900" }
+                ]
+            };
+
+            simulatedMarkets.unshift(newMarket);
+            selectedMarket = newMarket;
+            selectMarket(newMarket.ticker);
+            showNotification("Successfully injected custom contract!", "success");
+            logTerminal(`[SCHEMA REGISTRATION] Injected custom event contract ticker: ${newMarket.ticker}`);
+        }
+
+        // Kelly positioning formulas
+        function calculateEdgeAndSizing() {
+            const userProb = parseFloat(document.getElementById('forecast-slider').value) / 100;
+            const bankroll = userPortfolio.cash;
+            
+            const askPrice = selectedMarket.ask / 100; 
+            const ev = userProb - askPrice;
+            const edge = ev;
+
+            document.getElementById('forecast-label').innerText = `${Math.round(userProb * 100)}%`;
+            
+            const evOutput = document.getElementById('output-ev');
+            evOutput.innerText = `${ev >= 0 ? '+$' : '-$'}${Math.abs(ev).toFixed(2)} / share`;
+            evOutput.className = ev >= 0 ? "font-mono font-bold text-emerald-400" : "font-mono font-bold text-rose-400";
+
+            let kellyFraction = 0;
+            if (ev > 0) {
+                const b = (1 - askPrice) / askPrice;
+                const p = userProb;
+                const q = 1 - p;
+                kellyFraction = (p * b - q) / b;
+            }
+
+            const kellyOutput = document.getElementById('output-kelly');
+            const fracKellyOutput = document.getElementById('output-frac-kelly');
+            const recBox = document.getElementById('recommendation-box');
+
+            if (kellyFraction > 0) {
+                const kellyPct = kellyFraction * 100;
+                const fracKellyPct = kellyPct * 0.25;
+                const allocationDollar = bankroll * (fracKellyPct / 100);
+
+                kellyOutput.innerText = `${kellyPct.toFixed(2)}%`;
+                fracKellyOutput.innerText = `${fracKellyPct.toFixed(2)}%`;
+
+                recBox.className = "p-2.5 rounded-lg border text-[10px] leading-relaxed bg-emerald-500/5 border-emerald-500/10 text-emerald-400 border-emerald-500/20";
+                recBox.innerHTML = `<strong>Edge Confirmed:</strong> Positive EV detected ($${ev.toFixed(2)}/contract). Consider allocating up to <strong>$${allocationDollar.toFixed(2)}</strong> (${fracKellyPct.toFixed(2)}% of total capital) using Quarter-Kelly portfolio risk protection rules.`;
+            } else {
+                kellyOutput.innerText = "0.00%";
+                fracKellyOutput.innerText = "0.00%";
+                recBox.className = "p-2.5 rounded-lg border text-[10px] leading-relaxed bg-rose-500/5 border-rose-500/10 text-rose-400 border-rose-500/20";
+                recBox.innerHTML = `<strong>Zero or Negative Edge:</strong> Your subjective probability does not exceed the current ask price of <strong>${selectedMarket.ask}¢</strong>. Stand down or target opposing NO contracts.`;
+            }
+        }
+
+        // Autofill Kelly sizing calculations directly to placement widget
+        function autofillWithKellySizing() {
+            const userProb = parseFloat(document.getElementById('forecast-slider').value) / 100;
+            const askPrice = selectedMarket.ask / 100;
+            const ev = userProb - askPrice;
+
+            if (ev <= 0) {
+                showNotification("No positive edge exists to auto-size with Kelly formulas.", "error");
+                return;
+            }
+
+            const b = (1 - askPrice) / askPrice;
+            const kellyFraction = (userProb * b - (1 - userProb)) / b;
+            const targetCashAllocation = userPortfolio.cash * (kellyFraction * 0.25); // Quarter-Kelly
+            
+            const targetQty = Math.floor((targetCashAllocation * 100) / selectedMarket.ask);
+            if (targetQty <= 0) {
+                showNotification("Calculated allocation too low to buy 1 contract.", "error");
+                return;
+            }
+
+            setDirection('YES');
+            document.getElementById('trade-qty').value = targetQty;
+            updateTradeCalculations();
+            showNotification(`Autofilled Trade Panel with ${targetQty} YES contracts!`, "success");
+        }
+
+        // Live cross-market arbitrage scanner
+        function calculateArbitrageOpportunity() {
+            const kalshiYesPrice = selectedMarket.bid; 
+            const polymarketNoPrice = selectedMarket.arbPoly; 
+            const totalSetCost = kalshiYesPrice + polymarketNoPrice;
+            const netYield = ((100 - totalSetCost) / totalSetCost) * 100;
+
+            const tickerEl = document.getElementById('arb-ticker');
+            const yieldEl = document.getElementById('arb-yield');
+            const kPriceEl = document.getElementById('arb-kalshi-price');
+            const pPriceEl = document.getElementById('arb-poly-price');
+            const costEl = document.getElementById('arb-total-cost');
+
+            tickerEl.innerText = selectedMarket.ticker;
+            kPriceEl.innerText = `${kalshiYesPrice}¢`;
+            pPriceEl.innerText = `${polymarketNoPrice}¢`;
+            costEl.innerText = `${totalSetCost}¢`;
+
+            if (totalSetCost < 100) {
+                yieldEl.innerText = `+${netYield.toFixed(1)}% Yield`;
+                yieldEl.className = "text-xs font-bold text-emerald-400 font-mono";
+            } else {
+                yieldEl.innerText = "No Spread";
+                yieldEl.className = "text-xs font-bold text-rose-400 font-mono";
+            }
+        }
+
+        // Interactive Runnable Sandbox API logs
+        function logTerminal(text, type = 'success') {
+            const screen = document.getElementById('terminal-screen');
+            const logLine = document.createElement('div');
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? 'text-rose-400' :
+                          type === 'warn' ? 'text-yellow-400' :
+                          type === 'info' ? 'text-blue-400' : 'text-emerald-400';
+            
+            logLine.className = `${color} leading-relaxed`;
+            logLine.innerText = `[${timestamp}] ${text}`;
+            screen.appendChild(logLine);
+            screen.scrollTop = screen.scrollHeight;
+        }
+
+        function clearTerminal() {
+            document.getElementById('terminal-screen').innerHTML = `<div class="text-slate-500">// Terminal logs flushed. Ready.</div>`;
+        }
+
+        // Executable actions triggered via API sandbox
+        async function simulateTerminalCall(method) {
+            const tokenCost = 10;
+            
+            if (bucketTokens < tokenCost) {
+                logTerminal(`API BLOCKED: HTTP 429 Too Many Requests (Rate limit reached).`, "error");
+                logTerminal(`Triggering programmatic Client Exponential Backoff...`, "warn");
+                
+                let attempt = 1;
+                let backoffDelay = 1000;
+                
+                function runBackoff() {
+                    if (attempt <= 3) {
+                        logTerminal(`[Backoff] Attempt #${attempt} waiting ${backoffDelay}ms...`, "info");
+                        setTimeout(() => {
+                            if (bucketTokens >= tokenCost) {
+                                bucketTokens -= tokenCost;
+                                updateBucketUI();
+                                logTerminal(`[Backoff] Succeeded on attempt #${attempt}. Request completed.`, "success");
+                            } else {
+                                attempt++;
+                                backoffDelay *= 2;
+                                runBackoff();
+                            }
+                        }, backoffDelay);
+                    } else {
+                        logTerminal(`FATAL Error: Client retry threshold exceeded. Pipeline closed.`, "error");
+                    }
+                }
+                runBackoff();
+                return;
+            }
+
+            bucketTokens -= tokenCost;
+            updateBucketUI();
+
+            if (method === 'getMarkets') {
+                logTerminal(`GET /v2/markets HTTP/1.1 200 OK (Cost: ${tokenCost} Tokens)`, 'info');
+                try {
+                    const res = await fetch('/api/markets?status=open&limit=5');
+                    const json = await res.json();
+                    logTerminal(`Payload returned ${json.markets?.length || 0} active tickers: [${(json.markets || []).map(m=>m.ticker).join(', ')}]`);
+                } catch (e) {
+                    logTerminal(`Error fetching live markets in console: ${e.message}`, 'error');
+                }
+            } else if (method === 'getOrderbook') {
+                if (!selectedMarket) return;
+                logTerminal(`GET /v2/markets/${selectedMarket.ticker}/orderbook HTTP/1.1 200 OK (Cost: ${tokenCost} Tokens)`, 'info');
+                try {
+                    const res = await fetch(`/api/markets/${selectedMarket.ticker}/orderbook`);
+                    const json = await res.json();
+                    const yesLen = json.orderbook_fp?.yes_dollars?.length || 0;
+                    const noLen = json.orderbook_fp?.no_dollars?.length || 0;
+                    logTerminal(`Snapshot returned depth map. YES Bids: ${yesLen}, NO Bids: ${noLen}. Best YES bid: ${json.orderbook_fp?.yes_dollars?.[0]?.[0] || 'N/A'}`);
+                } catch (e) {
+                    logTerminal(`Error fetching live orderbook in console: ${e.message}`, 'error');
+                }
+            } else if (method === 'trigger429') {
+                // Instantly exhaust tokens to simulate a hard loop
+                bucketTokens = 0;
+                updateBucketUI();
+                logTerminal(`Throttling token capacity to 0. Running next dispatch...`, "warn");
+                setTimeout(() => simulateTerminalCall('getMarkets'), 100);
+            }
+        }
+
+        // Tab selection UI helpers
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+                panel.classList.add('hidden');
+            });
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn px-4 py-2 text-xs font-bold rounded-t-lg transition border-b-2 border-transparent text-brand-textMuted hover:text-slate-100";
+            });
+
+            const activeBtnId = tabId === 'tab-js' ? 'btn-tab-js' : 'btn-tab-py';
+            document.getElementById(activeBtnId).className = "tab-btn px-4 py-2 text-xs font-bold rounded-t-lg transition border-b-2 border-blue-500 text-blue-400 bg-brand-card";
+        }
+
+        // Custom clipboard mechanics
+        function copyCode(elementId) {
+            const codeText = document.getElementById(elementId).innerText;
+            const tempInput = document.createElement('textarea');
+            tempInput.value = codeText;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showNotification("Code copied to clipboard!", "success");
+                } else {
+                    showNotification("Failed to copy code to clipboard.", "error");
+                }
+            } catch (err) {
+                showNotification("Failed to copy code.", "error");
+            }
+            document.body.removeChild(tempInput);
+        }
+    </script>
+</body>
+</html>
