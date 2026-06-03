@@ -151,21 +151,21 @@ function initializePropsRepo() {
         sport: 'Basketball',
         league: 'NBA',
         eventId: 'ev_nba_1',
-        playerId: 'pl_harden',
-        playerName: 'James Harden',
-        team: 'LAC',
-        opponent: 'DAL',
-        statType: 'Points',
-        line: 18.5,
+        playerId: 'pl_lively',
+        playerName: 'Dereck Lively II',
+        team: 'DAL',
+        opponent: 'BOS',
+        statType: 'Points + Rebounds',
+        line: 14.5,
         overPrice: -110,
         underPrice: -110,
         prizePicksSideOptions: ['Over', 'Under'],
-        startTime: now + 50 * 3600 * 1000,
+        startTime: now + 4 * 3600 * 1000,
         status: 'active',
         lastUpdatedAt: now - 180 * 1000, // 3 minutes ago
         ingestedAt: now,
         freshnessStatus: 'STALE',
-        sourcePayloadHash: 'Harden_Points_18.5'
+        sourcePayloadHash: 'Lively_PointsRebounds_14.5'
     };
     activeProps.push(staleProp);
     generateAIPredictionForProp(staleProp);
@@ -200,7 +200,7 @@ function initializePropsRepo() {
 
 // Generate detailed independent AI predictions
 function generateAIPredictionForProp(prop) {
-    const isUnderdog = prop.playerName === 'James Harden' || prop.playerName === 'Kyrie Irving';
+    const isUnderdog = prop.playerName === 'Dereck Lively II' || prop.playerName === 'Kyrie Irving';
     let lean = 'No Edge';
     let conf = 50;
     let proj = prop.line;
@@ -265,7 +265,7 @@ function generateAIPredictionForProp(prop) {
         avoidReason = 'Extreme volatility in home run markets makes it mathematically unsound for slip builder.';
         reasonShort = 'High volatility. Outfielder walk rate is above average.';
         reasonLong = 'Red Sox pitching staff has walked Aaron Judge in 22% of recent matchups, severely capping his home run opportunity window.';
-    } else if (prop.playerName === 'James Harden') {
+    } else if (prop.playerName === 'Dereck Lively II') {
         lean = 'Stale — Do Not Use';
         conf = 0;
         avoidReason = 'The line has not been verified within the live polling window. Verification required.';
