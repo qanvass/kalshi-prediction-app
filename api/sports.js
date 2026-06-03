@@ -467,16 +467,21 @@ module.exports = function handleRoute(req, res) {
         return;
     }
 
-    const parsedUrl = url.parse(req.url, true);
-    const pathParts = parsedUrl.pathname.split('/');
-    const endpoint = pathParts[pathParts.length - 1];
+    const originalUrl = req.headers['x-forwarded-url'] || req.url;
+    const parsedUrl = url.parse(originalUrl, true);
+    
+    // Resolve rewritten sub-paths for Vercel Serverless compatibility
+    let pathname = parsedUrl.pathname;
+    if (parsedUrl.query && parsedUrl.query.path) {
+        pathname = '/' + parsedUrl.query.path;
+    }
 
     // Trigger update of timestamp freshness state
     updateFreshnessStatuses();
 
     // Route dispatcher
     try {
-        if (parsedUrl.pathname.endsWith('/status')) {
+        if (pathname.endsWith('/status')) {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({
                 status: 'online',
@@ -507,25 +512,25 @@ module.exports = function handleRoute(req, res) {
             return;
         }
 
-        if (parsedUrl.pathname.endsWith('/sports')) {
+        if (pathname.endsWith('/sports')) {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(leagues));
             return;
         }
 
-        if (parsedUrl.pathname.endsWith('/events')) {
+        if (pathname.endsWith('/events')) {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(events));
             return;
         }
 
-        if (parsedUrl.pathname.endsWith('/books')) {
+        if (pathname.endsWith('/books')) {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(sportsBooks));
             return;
         }
 
-        if (parsedUrl.pathname.endsWith('/props')) {
+        if (pathname.endsWith('/props')) {
             // Apply filtering logic if supplied
             let filteredProps = [...activeProps];
             const sportFilter = parsedUrl.query.sport;
@@ -552,7 +557,7 @@ module.exports = function handleRoute(req, res) {
             return;
         }
 
-        if (parsedUrl.pathname.endsWith('/line-movement')) {
+        if (pathname.endsWith('/line-movement')) {
             const propId = parsedUrl.query.propId;
             const history = lineMovementHistory[propId] || [];
             res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -560,7 +565,7 @@ module.exports = function handleRoute(req, res) {
             return;
         }
 
-        if (parsedUrl.pathname.endsWith('/slip/evaluate') && req.method === 'POST') {
+        if (pathname.endsWith('/slip/evaluate') && req.method === 'POST') {
             let body = '';
             req.on('data', chunk => { body += chunk; });
             req.on('end', () => {
@@ -637,7 +642,7 @@ module.exports = function handleRoute(req, res) {
             return;
         }
 
-        if (parsedUrl.pathname.endsWith('/admin/update') && req.method === 'POST') {
+        if (pathname.endsWith('/admin/update') && req.method === 'POST') {
             let body = '';
             req.on('data', chunk => { body += chunk; });
             req.on('end', () => {

@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/sports/:path*",
-      "destination": "/api/sports.js"
+      "destination": "/api/sports.js?path=:path*"
     },
     {
       "source": "/api/:path*",
