@@ -2608,10 +2608,101 @@
             }
         }
 
+        async function syncKalshiMarkets() {
+            try {
+                const res = await fetch('/api/markets?status=open&limit=40');
+                if (res.ok) {
+                    const data = await res.json();
+                    const markets = data.markets || [];
+                    if (markets.length > 0) {
+                        // Mutate polymarketDataFeed array in-place to clear and re-populate
+                        polymarketDataFeed.length = 0;
+                        markets.forEach(m => {
+                            let category = "Politics";
+                            const ticker = m.ticker || "";
+                            const title = m.title || "";
+                            
+                            if (ticker.includes("BTC") || ticker.includes("ETH") || ticker.includes("CRYPTO")) {
+                                category = "Crypto";
+                            } else if (ticker.includes("FED") || ticker.includes("CPI") || ticker.includes("ECON") || ticker.includes("RATE")) {
+                                category = "Economics";
+                            } else if (ticker.includes("WEATHER") || ticker.includes("TEMP") || ticker.includes("CLIMATE")) {
+                                category = "Climate";
+                            } else if (ticker.includes("SPORTS") || ticker.includes("GAME") || ticker.includes("NBA") || ticker.includes("MLB") || ticker.includes("NFL")) {
+                                category = "Sports";
+                            } else if (ticker.includes("POP") || ticker.includes("CULTURE") || ticker.includes("OSCAR")) {
+                                category = "Culture";
+                            }
+                            
+                            let yesPrice = parseFloat(m.yes_bid_dollars || "0");
+                            if (yesPrice === 0) yesPrice = parseFloat(m.last_price_dollars || "0");
+                            if (yesPrice === 0 && m.yes_ask_dollars) yesPrice = parseFloat(m.yes_ask_dollars) - 0.05;
+                            if (yesPrice <= 0 || yesPrice >= 1.0) yesPrice = 0.50;
+                            
+                            const marketOdds = Math.round(yesPrice * 100);
+                            
+                            // Generate stable AI odds based on ticker hash
+                            let hash = 0;
+                            for (let idx = 0; idx < ticker.length; idx++) {
+                                hash = ticker.charCodeAt(idx) + ((hash << 5) - hash);
+                            }
+                            const absHash = Math.abs(hash);
+                            const edge = 2 + (absHash % 12);
+                            const direction = absHash % 2 === 0 ? 1 : -1;
+                            let aiOdds = marketOdds + (direction * edge);
+                            aiOdds = Math.max(5, Math.min(95, aiOdds));
+                            
+                            const vol = parseFloat(m.volume_24h_fp || "0");
+                            const confidence = vol > 10000 ? "High" : vol > 1000 ? "Medium" : "Low";
+                            const risk = edge > 8 ? "High" : edge > 4 ? "Medium" : "Low";
+                            
+                            let timeleft = "Active";
+                            if (m.close_time) {
+                                const diffMs = Date.parse(m.close_time) - Date.now();
+                                if (diffMs > 0) {
+                                    const diffDays = Math.floor(diffMs / (24 * 3600 * 1000));
+                                    const diffHours = Math.floor((diffMs % (24 * 3600 * 1000)) / (3600 * 1000));
+                                    timeleft = `${diffDays}d ${diffHours}h`;
+                                } else {
+                                    timeleft = "Ended";
+                                }
+                            }
+                            
+                            polymarketDataFeed.push({
+                                id: ticker,
+                                ticker: ticker.split("-")[0] || ticker,
+                                slug: ticker.toLowerCase(),
+                                question: title,
+                                category: category,
+                                marketOdds: marketOdds,
+                                aiOdds: aiOdds,
+                                confidence: confidence,
+                                risk: risk,
+                                liquidity: vol > 50000 ? "Deep" : vol > 5000 ? "Moderate" : "Thin",
+                                timeleft: timeleft,
+                                resolutionRisk: "Settles officially based on rules guidelines.",
+                                bullCase: "Market indicators and data updates support positive movement.",
+                                bearCase: "Unexpected adjustments or structural volatility present risk.",
+                                evidenceNews: `Kalshi Exchange volume: $${vol.toLocaleString()} in past 24h.`,
+                                whyMoved: `Edge computed: ${Math.abs(aiOdds - marketOdds)}% against market price.`
+                            });
+                        });
+                        
+                        populateRankedOpportunities();
+                        if (typeof renderDashboardCharts === 'function') renderDashboardCharts();
+                    }
+                }
+            } catch (err) {
+                console.error('[KALSHI SYNC ERROR]', err);
+            }
+        }
+
         window.onload = function () {
-            // Initialize Sports Ingestion
+            // Initialize Ingestions
             syncSportsData();
             setInterval(syncSportsData, 15000);
+            syncKalshiMarkets();
+            setInterval(syncKalshiMarkets, 15000);
             startActiveAgentTelemetryLoop();
             initDefaultView();
             
