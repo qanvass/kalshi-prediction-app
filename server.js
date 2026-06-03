@@ -58,9 +58,21 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    // Serve KALSHI PREDICT v4.html
-    if (parsedUrl.pathname === '/' || parsedUrl.pathname === '/index.html' || parsedUrl.pathname === '/KALSHI%20PREDICT.html' || parsedUrl.pathname === '/KALSHI PREDICT.html' || parsedUrl.pathname === '/KALSHI%20PREDICT%20v2.html' || parsedUrl.pathname === '/KALSHI PREDICT v2.html' || parsedUrl.pathname === '/KALSHI%20PREDICT%20v3.html' || parsedUrl.pathname === '/KALSHI PREDICT v3.html' || parsedUrl.pathname === '/KALSHI%20PREDICT%20v4.html' || parsedUrl.pathname === '/KALSHI PREDICT v4.html') {
-        const filePath = path.join(__dirname, 'KALSHI PREDICT v4.html');
+    // Serve KALSHI PREDICT html files
+    if (parsedUrl.pathname === '/' || parsedUrl.pathname === '/index.html' || 
+        parsedUrl.pathname === '/KALSHI%20PREDICT.html' || parsedUrl.pathname === '/KALSHI PREDICT.html' || 
+        parsedUrl.pathname === '/KALSHI%20PREDICT%20v2.html' || parsedUrl.pathname === '/KALSHI PREDICT v2.html' || 
+        parsedUrl.pathname === '/KALSHI%20PREDICT%20v3.html' || parsedUrl.pathname === '/KALSHI PREDICT v3.html' || 
+        parsedUrl.pathname === '/KALSHI%20PREDICT%20v4.html' || parsedUrl.pathname === '/KALSHI PREDICT v4.html' ||
+        parsedUrl.pathname === '/KALSHI%20PREDICT%20v5.html' || parsedUrl.pathname === '/KALSHI PREDICT v5.html') {
+        
+        let fileToServe = 'index.html';
+        if (parsedUrl.pathname.includes('v2')) fileToServe = 'KALSHI PREDICT v2.html';
+        else if (parsedUrl.pathname.includes('v3')) fileToServe = 'KALSHI PREDICT v3.html';
+        else if (parsedUrl.pathname.includes('v4')) fileToServe = 'KALSHI PREDICT v4.html';
+        else if (parsedUrl.pathname.includes('v5')) fileToServe = 'KALSHI PREDICT v5.html';
+
+        const filePath = path.join(__dirname, fileToServe);
         fs.readFile(filePath, 'utf8', (err, data) => {
             if (err) {
                 res.writeHead(500, { 'Content-Type': 'text/plain' });
