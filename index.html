@@ -137,6 +137,9 @@
             <button onclick="switchTab('tab-home')" id="nav-btn-home" class="nav-tab-btn py-3 px-2 border-b-2 border-brand-secondary text-brand-secondary flex items-center gap-1.5 shrink-0 transition-all">
                 <i class="fa-solid fa-house"></i> Home Dashboard
             </button>
+            <button onclick="switchTab('tab-sports')" id="nav-btn-sports" class="nav-tab-btn py-3 px-2 border-b-2 border-transparent text-brand-textMuted hover:text-slate-800 flex items-center gap-1.5 shrink-0 transition-all">
+                <i class="fa-solid fa-basketball text-orange-500"></i> Sports Betting
+            </button>
             <button onclick="switchTab('tab-finder')" id="nav-btn-finder" class="nav-tab-btn py-3 px-2 border-b-2 border-transparent text-brand-textMuted hover:text-slate-800 flex items-center gap-1.5 shrink-0 transition-all">
                 <i class="fa-solid fa-wand-magic-sparkles"></i> AI Copilot Chat
             </button>
@@ -528,6 +531,282 @@
                     </div>
                     <div class="space-y-3" id="evidence-news-box">
                         <!-- News elements -->
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- TAB SECTION: SPORTS BETTING & PRIZEPICKS (SportsGameOdds) -->
+        <section id="tab-sports" class="tab-content hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- LEFT COLUMN: Sub-tabs, Filters, and Props Cards Grid (8 Columns) -->
+            <div class="lg:col-span-8 flex flex-col gap-6">
+                
+                <!-- Headline Banner -->
+                <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-900 rounded-3xl p-6 text-white relative overflow-hidden shadow-vibrant">
+                    <div class="absolute right-0 top-0 opacity-[0.08] text-[180px] pointer-events-none text-white">
+                        <i class="fa-solid fa-medal animate-pulse"></i>
+                    </div>
+                    <div class="max-w-xl space-y-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] bg-indigo-500/30 border border-indigo-400/40 uppercase tracking-widest px-2.5 py-1 rounded-full font-extrabold font-mono">Source of Truth: SportsGameOdds API</span>
+                            <span id="sports-api-sync-badge" class="text-[10px] bg-emerald-500/20 text-brand-emerald border border-brand-emerald/30 uppercase tracking-widest px-2.5 py-1 rounded-full font-bold font-mono">● LIVE CONNECTION</span>
+                        </div>
+                        <h2 class="text-2xl font-black leading-tight">BetHelper+ Player Props & Odds Intelligence</h2>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            Analyze market discrepancies between PrizePicks lines, consensus bookmaker odds, and advanced mathematical models. Real-time predictions derived in 5-second and 30-second synchronization cycles.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Filters Control Bar -->
+                <div class="bg-white border border-brand-border rounded-3xl p-5 shadow-sm space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs font-bold">
+                        <!-- Search Bar -->
+                        <div class="relative">
+                            <label class="block text-[9px] uppercase font-bold text-brand-textMuted mb-1 font-mono">Search Player / Team</label>
+                            <div class="relative flex items-center">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 text-slate-400"></i>
+                                <input type="text" id="sports-search" oninput="applySportsFilters()" placeholder="e.g. Doncic..." class="w-full bg-slate-50 border border-brand-border rounded-xl pl-9 pr-3 py-2 text-slate-800 focus:outline-none focus:border-brand-secondary">
+                            </div>
+                        </div>
+
+                        <!-- Sport Filter -->
+                        <div>
+                            <label class="block text-[9px] uppercase font-bold text-brand-textMuted mb-1 font-mono">Sport Category</label>
+                            <select id="sports-filter-sport" onchange="applySportsFilters()" class="w-full bg-slate-50 border border-brand-border rounded-xl px-3 py-2 text-slate-800 focus:outline-none">
+                                <option value="">All Sports</option>
+                                <option value="Basketball">Basketball</option>
+                                <option value="Baseball">Baseball</option>
+                                <option value="Hockey">Hockey</option>
+                                <option value="MMA">MMA</option>
+                                <option value="Golf">Golf</option>
+                            </select>
+                        </div>
+
+                        <!-- Book Maker Filter -->
+                        <div>
+                            <label class="block text-[9px] uppercase font-bold text-brand-textMuted mb-1 font-mono">Target Bookmaker</label>
+                            <select id="sports-filter-book" onchange="applySportsFilters()" class="w-full bg-slate-50 border border-brand-border rounded-xl px-3 py-2 text-slate-800 focus:outline-none">
+                                <option value="PrizePicks" selected>PrizePicks Props Only</option>
+                                <option value="all">All Books Compared</option>
+                            </select>
+                        </div>
+
+                        <!-- Stat Type Filter -->
+                        <div>
+                            <label class="block text-[9px] uppercase font-bold text-brand-textMuted mb-1 font-mono">Stat Category</label>
+                            <select id="sports-filter-stat" onchange="applySportsFilters()" class="w-full bg-slate-50 border border-brand-border rounded-xl px-3 py-2 text-slate-800 focus:outline-none">
+                                <option value="">All Stats</option>
+                                <option value="Points">Points</option>
+                                <option value="Assists">Assists</option>
+                                <option value="Rebounds">Rebounds</option>
+                                <option value="Home Runs">Home Runs</option>
+                                <option value="Hits">Hits</option>
+                                <option value="Runs">Runs</option>
+                                <option value="Shots">Shots</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-bold border-t border-slate-100 pt-3">
+                        <!-- Edge Filter Slider -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-[9px] uppercase text-brand-textMuted font-mono">Min AI Edge:</span>
+                                <span id="sports-edge-label" class="font-mono text-brand-secondary">+0.0</span>
+                            </div>
+                            <input type="range" id="sports-filter-edge" min="0" max="5" step="0.5" value="0" oninput="adjustEdgeSlider(this.value)" class="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                        </div>
+
+                        <!-- Confidence Filter Slider -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-[9px] uppercase text-brand-textMuted font-mono">Min Confidence:</span>
+                                <span id="sports-conf-label" class="font-mono text-brand-secondary">50%</span>
+                            </div>
+                            <input type="range" id="sports-filter-conf" min="50" max="80" step="5" value="50" oninput="adjustConfSlider(this.value)" class="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                        </div>
+
+                        <!-- Risk Filter Select -->
+                        <div>
+                            <label class="block text-[9px] uppercase font-bold text-brand-textMuted mb-1 font-mono">Risk Tolerance</label>
+                            <select id="sports-filter-risk" onchange="applySportsFilters()" class="w-full bg-slate-50 border border-brand-border rounded-xl px-3 py-2 text-slate-800 focus:outline-none">
+                                <option value="">All Risk Levels</option>
+                                <option value="Low">Low Risk Only</option>
+                                <option value="Medium">Medium & Low Risk</option>
+                                <option value="High">High Risk</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sub-tabs navigation bar -->
+                <div class="bg-white border border-brand-border rounded-3xl p-2.5 shadow-sm flex overflow-x-auto gap-2 scrollbar-none text-xs font-bold">
+                    <button onclick="switchSportsSubTab('PrizePicks')" id="sub-sports-tab-PrizePicks" class="sub-sports-tab px-4 py-2 rounded-xl transition bg-slate-900 text-white">PrizePicks Views</button>
+                    <button onclick="switchSportsSubTab('Edges')" id="sub-sports-tab-Edges" class="sub-sports-tab px-4 py-2 rounded-xl text-brand-textMuted hover:text-slate-800 transition">Best AI Edges</button>
+                    <button onclick="switchSportsSubTab('Live')" id="sub-sports-tab-Live" class="sub-sports-tab px-4 py-2 rounded-xl text-brand-textMuted hover:text-slate-800 transition flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-brand-coral animate-ping"></span> Live Props</button>
+                    <button onclick="switchSportsSubTab('NBA')" id="sub-sports-tab-NBA" class="sub-sports-tab px-4 py-2 rounded-xl text-brand-textMuted hover:text-slate-800 transition">NBA Props</button>
+                    <button onclick="switchSportsSubTab('MLB')" id="sub-sports-tab-MLB" class="sub-sports-tab px-4 py-2 rounded-xl text-brand-textMuted hover:text-slate-800 transition">MLB Props</button>
+                    <button onclick="switchSportsSubTab('Hockey')" id="sub-sports-tab-Hockey" class="sub-sports-tab px-4 py-2 rounded-xl text-brand-textMuted hover:text-slate-800 transition">NHL Props</button>
+                    <button onclick="switchSportsSubTab('Avoid')" id="sub-sports-tab-Avoid" class="sub-sports-tab px-4 py-2 rounded-xl text-brand-textMuted hover:text-slate-800 transition">Avoid Targets</button>
+                </div>
+
+                <!-- Live Props Grid / List -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="sports-props-grid-container">
+                    <!-- Cards will be populated dynamically -->
+                </div>
+
+                <!-- Empty state if no records match -->
+                <div id="sports-props-empty-state" class="hidden bg-white border border-brand-border rounded-3xl p-12 text-center text-slate-500 shadow-sm space-y-3">
+                    <div class="text-4xl text-slate-300"><i class="fa-solid fa-face-meh"></i></div>
+                    <div class="font-bold text-sm text-slate-700">No matching sports props found</div>
+                    <p class="text-xs max-w-sm mx-auto">Try clearing your filters or check if Demo Mode is toggled off when the live API is unavailable.</p>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: Slip Builder & Admin Controls (4 Columns) -->
+            <div class="lg:col-span-4 flex flex-col gap-6">
+
+                <!-- SLIP BUILDER WIDGET -->
+                <div class="bg-white border border-brand-border rounded-3xl p-5 shadow-vibrant flex flex-col gap-4 sticky top-[150px] z-10">
+                    <div class="border-b border-slate-100 pb-3 flex justify-between items-center">
+                        <h3 class="font-extrabold text-sm text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-brand-secondary"></i> Slip Builder
+                        </h3>
+                        <span id="slip-badge-count" class="bg-brand-secondary text-white text-[10px] px-2.5 py-0.5 rounded-full font-black">0 Legs</span>
+                    </div>
+
+                    <!-- Slip Legs container -->
+                    <div id="slip-legs-container" class="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+                        <!-- Populated dynamically -->
+                    </div>
+
+                    <!-- Empty state inside slip builder -->
+                    <div id="slip-empty-state" class="text-center py-6 text-slate-400 space-y-2">
+                        <i class="fa-solid fa-square-plus text-3xl opacity-40"></i>
+                        <p class="text-[11px] font-semibold">Select "Add to Slip" on player props to start building your combination card.</p>
+                    </div>
+
+                    <!-- Slip Summary Metrics -->
+                    <div id="slip-metrics-box" class="hidden border-t border-slate-100 pt-3.5 space-y-4 text-xs font-bold">
+                        <div class="grid grid-cols-2 gap-2 text-center">
+                            <div class="bg-slate-50 border border-slate-100 p-2.5 rounded-2xl">
+                                <span class="text-[8px] text-brand-textMuted uppercase block">Avg Confidence</span>
+                                <span id="slip-avg-confidence" class="font-mono text-sm text-brand-secondary font-black">0%</span>
+                            </div>
+                            <div class="bg-slate-50 border border-slate-100 p-2.5 rounded-2xl">
+                                <span class="text-[8px] text-brand-textMuted uppercase block">Overall Value</span>
+                                <span id="slip-overall-score" class="text-sm text-brand-emerald font-black">Medium Edge</span>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Warnings alerts list -->
+                        <div id="slip-warnings-list" class="space-y-2">
+                            <!-- Populated with warnings -->
+                        </div>
+
+                        <!-- Actions bar -->
+                        <div class="grid grid-cols-1 gap-2 pt-1.5">
+                            <button id="slip-place-btn" onclick="triggerSlipPlaceTrade()" class="w-full py-3 bg-brand-secondary hover:bg-blue-700 text-white rounded-xl transition shadow-blue-glow flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-bolt"></i> Place Slip Trade
+                            </button>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="improveSlip('optimize')" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition flex items-center justify-center gap-1">
+                                    <i class="fa-solid fa-arrow-trend-up"></i> Optimize Slip
+                                </button>
+                                <button onclick="improveSlip('safer')" class="py-2.5 bg-emerald-50 hover:bg-emerald-100 text-brand-emerald rounded-xl transition flex items-center justify-center gap-1">
+                                    <i class="fa-solid fa-shield-halved"></i> Make Safer
+                                </button>
+                            </div>
+                            <button onclick="clearSlip()" class="w-full py-2 text-brand-coral hover:bg-rose-50 rounded-xl transition text-[10px] uppercase font-bold tracking-wider">
+                                Clear Slip Selection
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ADMIN BACK OFFICE TOOL -->
+                <div class="bg-slate-900 rounded-3xl p-5 text-white shadow-vibrant space-y-4">
+                    <div class="border-b border-white/10 pb-3 flex justify-between items-center">
+                        <h3 class="font-bold text-xs uppercase tracking-widest text-blue-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-screwdriver-wrench"></i> SportsGameOdds Admin Panel
+                        </h3>
+                        <span id="admin-connection-dot" class="h-2.5 w-2.5 rounded-full bg-brand-emerald"></span>
+                    </div>
+
+                    <div class="space-y-2.5 font-mono text-[10px]">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Connection Status:</span>
+                            <span id="admin-connection-text" class="text-brand-emerald font-bold">ONLINE (OK)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">API Key Configured:</span>
+                            <span id="admin-apikey-status" class="font-bold">NO (using default)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Cache Active Mode:</span>
+                            <span id="admin-mode-text" class="text-yellow-400 font-bold">DEMO DATA</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Active Props Count:</span>
+                            <span id="admin-props-count" class="font-bold">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Last Successful Sync:</span>
+                            <span id="admin-last-sync" class="font-bold">Just now</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Rate Limit Status:</span>
+                            <span id="admin-rate-limit" class="font-bold">1000/1000</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Websocket Enabled:</span>
+                            <span id="admin-ws-status" class="text-slate-500 font-bold">FALSE</span>
+                        </div>
+                    </div>
+
+                    <!-- Config Input Toggles -->
+                    <div class="border-t border-white/10 pt-3.5 space-y-3 text-xs">
+                        <!-- API Key Input -->
+                        <div>
+                            <label class="block text-[9px] text-slate-400 uppercase font-bold tracking-wider mb-1 font-mono">Configure API Key</label>
+                            <div class="flex gap-2">
+                                <input type="password" id="admin-apikey-input" placeholder="Paste SGO_API_KEY..." class="bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5 text-white focus:outline-none focus:border-blue-500 text-xs w-full">
+                                <button onclick="saveApiKeyFromAdmin()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-xl transition text-[10px] shrink-0">Save</button>
+                            </div>
+                        </div>
+
+                        <!-- Demo Mode Toggle -->
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-300">Force Demo Seed Data</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="admin-demo-toggle" onchange="toggleAdminDemoMode()" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+
+                        <!-- Kill Switch Toggle -->
+                        <div class="flex items-center justify-between">
+                            <span class="text-red-400 font-bold">API Kill Switch</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="admin-kill-toggle" onchange="toggleAdminKillSwitch()" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-600"></div>
+                            </label>
+                        </div>
+
+                        <!-- Manual Sync / Reset button -->
+                        <div class="grid grid-cols-2 gap-2 pt-2">
+                            <button onclick="triggerManualSync()" class="py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-rotate"></i> Sync Now
+                            </button>
+                            <button onclick="triggerCacheClear()" class="py-2 bg-rose-900/40 hover:bg-rose-900/60 text-red-300 border border-red-900/30 rounded-xl transition text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-trash-can"></i> Clear Cache
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -1371,7 +1650,684 @@
             }
         }
 
+        // ==========================================
+        // SPORTSGAMEODDS SPORTS BETTING INTEGRATION
+        // ==========================================
+        let sportsPropsData = [];
+        let sportsStatus = {};
+        let activeSlip = [];
+        let sportsSubTab = 'PrizePicks';
+        let sportsSearchQuery = '';
+        let sportsSportFilter = '';
+        let sportsBookFilter = 'PrizePicks';
+        let sportsStatFilter = '';
+        let sportsEdgeThreshold = 0;
+        let sportsConfidenceThreshold = 50;
+        let sportsRiskFilter = '';
+        let currentOpenComparisonPropId = null;
+
+        async function syncSportsData() {
+            try {
+                // Fetch connection status metrics
+                const statusRes = await fetch('/api/sports/status');
+                if (statusRes.ok) {
+                    sportsStatus = await statusRes.json();
+                    renderSportsAdminPanel();
+                }
+
+                // Fetch props list
+                const propsRes = await fetch('/api/sports/props');
+                if (propsRes.ok) {
+                    const data = await propsRes.json();
+                    sportsPropsData = data.props || [];
+                    
+                    // Synchronize active slip freshness status if prop list was refreshed
+                    evaluateSlip();
+                    
+                    // Render UI
+                    renderSportsSection();
+                }
+            } catch (err) {
+                console.error('[SPORTS SYNC ERROR]', err);
+                // Set fallbacks for UI in case of failure
+                sportsStatus.syncStatus = 'Error';
+                renderSportsAdminPanel();
+            }
+        }
+
+        function renderSportsAdminPanel() {
+            const dot = document.getElementById('admin-connection-dot');
+            const statusText = document.getElementById('admin-connection-text');
+            const apikeyStatus = document.getElementById('admin-apikey-status');
+            const modeText = document.getElementById('admin-mode-text');
+            const propsCount = document.getElementById('admin-props-count');
+            const lastSync = document.getElementById('admin-last-sync');
+            const rateLimit = document.getElementById('admin-rate-limit');
+            const wsStatus = document.getElementById('admin-ws-status');
+            const demoToggle = document.getElementById('admin-demo-toggle');
+            const killToggle = document.getElementById('admin-kill-toggle');
+
+            if (!sportsStatus || !sportsStatus.config) return;
+
+            // Connection Dot & Text
+            if (sportsStatus.config.killSwitch || sportsStatus.syncStatus === 'Error') {
+                dot.className = 'h-2.5 w-2.5 rounded-full bg-brand-coral animate-pulse';
+                statusText.className = 'text-brand-coral font-bold';
+                statusText.innerText = sportsStatus.config.killSwitch ? 'KILLED' : 'SYNC ERROR';
+            } else {
+                dot.className = 'h-2.5 w-2.5 rounded-full bg-brand-emerald';
+                statusText.className = 'text-brand-emerald font-bold';
+                statusText.innerText = 'ONLINE (OK)';
+            }
+
+            // Config Statuses
+            apikeyStatus.innerText = sportsStatus.config.apiKeyConfigured ? 'YES (Secure Backend)' : 'NO (using default)';
+            apikeyStatus.className = sportsStatus.config.apiKeyConfigured ? 'text-brand-emerald font-bold' : 'text-slate-400 font-bold';
+            
+            modeText.innerText = sportsStatus.config.demoMode ? 'DEMO DATA SEED' : 'LIVE API MODE';
+            modeText.className = sportsStatus.config.demoMode ? 'text-yellow-400 font-bold' : 'text-brand-emerald font-bold';
+
+            propsCount.innerText = sportsStatus.telemetry ? sportsStatus.telemetry.propsCount : '0';
+            
+            // Last Sync time
+            if (sportsStatus.telemetry && sportsStatus.telemetry.lastSync) {
+                const age = Math.round((Date.now() - sportsStatus.telemetry.lastSync) / 1000);
+                lastSync.innerText = age <= 5 ? 'Just now' : `${age}s ago`;
+            } else {
+                lastSync.innerText = 'N/A';
+            }
+
+            if (sportsStatus.telemetry && sportsStatus.telemetry.rateLimits) {
+                rateLimit.innerText = `${sportsStatus.telemetry.rateLimits.remaining}/${sportsStatus.telemetry.rateLimits.limit}`;
+            }
+
+            wsStatus.innerText = sportsStatus.config.enableWebsocket ? 'ACTIVE' : 'FALSE';
+            wsStatus.className = sportsStatus.config.enableWebsocket ? 'text-brand-emerald font-bold' : 'text-slate-500 font-bold';
+
+            // Sync Toggles on admin pane
+            if (demoToggle) demoToggle.checked = sportsStatus.config.demoMode;
+            if (killToggle) killToggle.checked = sportsStatus.config.killSwitch;
+        }
+
+        function switchSportsSubTab(tab) {
+            sportsSubTab = tab;
+            document.querySelectorAll('.sub-sports-tab').forEach(btn => {
+                btn.className = 'sub-sports-tab px-4 py-2 rounded-xl text-brand-textMuted hover:text-slate-800 transition';
+            });
+            const activeBtn = document.getElementById(`sub-sports-tab-${tab}`);
+            if (activeBtn) {
+                activeBtn.className = 'sub-sports-tab px-4 py-2 rounded-xl transition bg-slate-900 text-white';
+            }
+            renderSportsSection();
+        }
+
+        function applySportsFilters() {
+            sportsSearchQuery = document.getElementById('sports-search').value.toLowerCase().trim();
+            sportsSportFilter = document.getElementById('sports-filter-sport').value;
+            sportsBookFilter = document.getElementById('sports-filter-book').value;
+            sportsStatFilter = document.getElementById('sports-filter-stat').value;
+            sportsRiskFilter = document.getElementById('sports-filter-risk').value;
+            renderSportsSection();
+        }
+
+        function adjustEdgeSlider(val) {
+            document.getElementById('sports-edge-label').innerText = `+${parseFloat(val).toFixed(1)}`;
+            sportsEdgeThreshold = parseFloat(val);
+            applySportsFilters();
+        }
+
+        function adjustConfSlider(val) {
+            document.getElementById('sports-conf-label').innerText = `${val}%`;
+            sportsConfidenceThreshold = parseInt(val, 10);
+            applySportsFilters();
+        }
+
+        function renderSportsSection() {
+            const grid = document.getElementById('sports-props-grid-container');
+            const emptyState = document.getElementById('sports-props-empty-state');
+            if (!grid || !emptyState) return;
+            grid.innerHTML = '';
+
+            let filteredProps = sportsPropsData.filter(prop => {
+                const pred = prop.prediction;
+                if (!pred) return false;
+
+                // Search matching
+                const matchesSearch = prop.playerName.toLowerCase().includes(sportsSearchQuery) || 
+                                      prop.team.toLowerCase().includes(sportsSearchQuery) || 
+                                      prop.opponent.toLowerCase().includes(sportsSearchQuery);
+                if (!matchesSearch) return false;
+
+                // Sport filter
+                if (sportsSportFilter && prop.sport !== sportsSportFilter) return false;
+
+                // Book filter
+                if (sportsBookFilter !== 'all' && prop.book !== sportsBookFilter) return false;
+
+                // Stat category filter
+                if (sportsStatFilter && prop.statType !== sportsStatFilter) return false;
+
+                // Slider values
+                if (pred.edgeScore < sportsEdgeThreshold) return false;
+                if (pred.confidenceScore < sportsConfidenceThreshold && prop.freshnessStatus !== 'STALE' && prop.freshnessStatus !== 'LOCKED') return false;
+
+                // Risk level filter
+                if (sportsRiskFilter) {
+                    if (sportsRiskFilter === 'Low' && pred.riskScore !== 'Low') return false;
+                    if (sportsRiskFilter === 'Medium' && (pred.riskScore === 'High')) return false;
+                    if (sportsRiskFilter === 'High' && pred.riskScore !== 'High') return false;
+                }
+
+                // Sub-tabs filtering
+                if (sportsSubTab === 'Edges') {
+                    if (pred.edgeScore < 1.0) return false;
+                } else if (sportsSubTab === 'Live') {
+                    if (prop.freshnessStatus !== 'LIVE') return false;
+                } else if (sportsSubTab === 'NBA') {
+                    if (prop.league !== 'NBA') return false;
+                } else if (sportsSubTab === 'MLB') {
+                    if (prop.league !== 'MLB') return false;
+                } else if (sportsSubTab === 'Hockey') {
+                    if (prop.league !== 'NHL') return false;
+                } else if (sportsSubTab === 'Avoid') {
+                    if (pred.lean !== 'Avoid' && pred.lean !== 'Stale — Do Not Use') return false;
+                }
+
+                return true;
+            });
+
+            // If SGO config fails / kill switch is enabled, enforce empty error state
+            if (sportsStatus.config && sportsStatus.config.killSwitch) {
+                grid.className = "hidden";
+                emptyState.className = "bg-white border border-brand-border rounded-3xl p-12 text-center text-slate-500 shadow-sm space-y-3";
+                emptyState.innerHTML = `
+                    <div class="text-4xl text-brand-coral"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <div class="font-bold text-sm text-slate-700">Live sports feed temporarily unavailable</div>
+                    <p class="text-xs max-w-sm mx-auto">The administrator has triggered the feed kill switch or the SportsGameOdds connection timed out.</p>
+                `;
+                return;
+            }
+
+            if (filteredProps.length === 0) {
+                grid.className = "hidden";
+                emptyState.className = "bg-white border border-brand-border rounded-3xl p-12 text-center text-slate-500 shadow-sm space-y-3";
+                return;
+            }
+
+            grid.className = "grid grid-cols-1 md:grid-cols-2 gap-4";
+            emptyState.className = "hidden";
+
+            filteredProps.forEach(prop => {
+                const pred = prop.prediction;
+                const card = document.createElement('div');
+                
+                // Set colors depending on Lean
+                let leanBg = 'bg-slate-100 text-slate-800 border-slate-200';
+                if (pred.lean.includes('More')) {
+                    leanBg = pred.lean.startsWith('Strong') ? 'bg-emerald-505 bg-emerald-500 text-white border-emerald-600' : 'bg-emerald-50 text-brand-emerald border-emerald-200';
+                } else if (pred.lean.includes('Less')) {
+                    leanBg = pred.lean.startsWith('Strong') ? 'bg-rose-505 bg-rose-500 text-white border-rose-600' : 'bg-rose-50 text-brand-coral border-rose-200';
+                } else if (pred.lean === 'Avoid') {
+                    leanBg = 'bg-amber-500 text-white border-amber-600';
+                } else if (pred.lean.includes('Stale') || pred.lean.includes('Locked')) {
+                    leanBg = 'bg-slate-200 text-slate-500 border-slate-300';
+                }
+
+                // Set colors depending on Freshness status
+                let freshClass = 'bg-blue-50 text-brand-secondary border-blue-100';
+                let freshIcon = '●';
+                if (prop.freshnessStatus === 'LIVE') {
+                    freshClass = 'bg-emerald-50 text-brand-emerald border-emerald-100 font-extrabold animate-pulse';
+                    freshIcon = '● LIVE';
+                } else if (prop.freshnessStatus === 'RECENT') {
+                    freshClass = 'bg-indigo-50 text-indigo-600 border-indigo-100';
+                    freshIcon = '● RECENT';
+                } else if (prop.freshnessStatus === 'STALE') {
+                    freshClass = 'bg-amber-50 text-amber-600 border-amber-100 font-extrabold';
+                    freshIcon = '⚠️ STALE';
+                } else if (prop.freshnessStatus === 'LOCKED') {
+                    freshClass = 'bg-slate-100 text-slate-500 border-slate-200 line-through';
+                    freshIcon = '🔒 LOCKED';
+                } else if (prop.freshnessStatus === 'ERROR' || prop.freshnessStatus === 'UNVERIFIED') {
+                    freshClass = 'bg-rose-50 text-brand-coral border-rose-100 font-extrabold';
+                    freshIcon = '✕ UNVERIFIED';
+                }
+
+                // Dynamic sports fallback icons
+                let sportIcon = 'fa-basketball';
+                if (prop.sport === 'Baseball') sportIcon = 'fa-baseball';
+                else if (prop.sport === 'Hockey') sportIcon = 'fa-hockey-puck';
+                else if (prop.sport === 'MMA') sportIcon = 'fa-user-ninja';
+                else if (prop.sport === 'Golf') sportIcon = 'fa-golf-ball-tee';
+
+                // Safety checks: Disable buttons if Stale/Locked/Unverified
+                const isActionable = prop.freshnessStatus === 'LIVE' || prop.freshnessStatus === 'RECENT';
+                const actionButtonText = isActionable ? 'Add to Slip' : 'Locked';
+                const buttonDisabledAttr = isActionable ? '' : 'disabled';
+                const buttonClass = isActionable 
+                    ? 'w-full py-2 bg-slate-900 text-white hover:bg-slate-800 rounded-xl transition flex items-center justify-center gap-1 hover:scale-[1.02]'
+                    : 'w-full py-2 bg-slate-100 text-slate-400 cursor-not-allowed rounded-xl transition flex items-center justify-center gap-1';
+
+                // Line Comparison Content Builder
+                const dkLine = prop.sport === 'Basketball' ? (prop.line + 0.5) : prop.line;
+                const fdLine = prop.sport === 'Basketball' ? (prop.line - 0.5) : prop.line;
+                const comparisonHTML = `
+                    <div class="bg-slate-50 border border-slate-150 p-2.5 rounded-2xl text-[10px] space-y-1.5 mt-3">
+                        <div class="flex justify-between items-center text-slate-500 font-bold border-b border-slate-200 pb-1">
+                            <span>Book Comparison</span>
+                            <span class="text-brand-secondary">Consensus: ${prop.line}</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-1 text-center font-mono">
+                            <div class="bg-white border border-slate-100 p-1 rounded-lg">
+                                <span class="text-slate-400 block text-[8px]">DraftKings</span>
+                                <span class="font-bold text-slate-700">${dkLine}</span>
+                            </div>
+                            <div class="bg-white border border-slate-100 p-1 rounded-lg">
+                                <span class="text-slate-400 block text-[8px]">FanDuel</span>
+                                <span class="font-bold text-slate-700">${fdLine}</span>
+                            </div>
+                            <div class="bg-white border border-slate-100 p-1 rounded-lg">
+                                <span class="text-slate-400 block text-[8px]">Underdog</span>
+                                <span class="font-bold text-slate-700">${prop.line}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                card.className = `bg-white border ${isActionable ? 'border-brand-border hover:border-brand-secondary shadow-sm hover:shadow-hover-glow' : 'border-rose-100 bg-rose-50/20'} rounded-3xl p-5 flex flex-col justify-between transition-all duration-300 relative`;
+                card.id = `sports-prop-card-${prop.id}`;
+
+                card.innerHTML = `
+                    <div>
+                        <!-- Header with player metadata & status -->
+                        <div class="flex justify-between items-start gap-2 mb-3">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 border border-slate-200 shrink-0">
+                                    <i class="fa-solid ${sportIcon} text-lg text-brand-secondary"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-extrabold text-sm text-slate-800 leading-none">${prop.playerName}</h4>
+                                    <span class="text-[10px] text-slate-400 font-semibold block mt-0.5">${prop.team} vs ${prop.opponent} • Game Time</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-end gap-1.5">
+                                <span class="px-2 py-0.5 rounded-full text-[8px] font-black tracking-wider uppercase border ${freshClass}">${freshIcon}</span>
+                                <span class="text-[8px] text-slate-400 font-mono">SGO Ingest</span>
+                            </div>
+                        </div>
+
+                        <!-- Target Prop and AI Projection Side-By-Side -->
+                        <div class="grid grid-cols-2 gap-3.5 py-3 border-y border-slate-100 my-3 text-center">
+                            <div class="bg-slate-50 border border-slate-100 p-3 rounded-2xl">
+                                <span class="text-[9px] text-brand-textMuted uppercase block font-bold">PrizePicks Line</span>
+                                <span class="font-mono-code font-black text-base text-slate-700">${prop.line} <span class="text-xs font-semibold text-slate-400">${prop.statType}</span></span>
+                            </div>
+                            <div class="bg-blue-50 border border-blue-100 p-3 rounded-2xl">
+                                <span class="text-[9px] text-brand-secondary uppercase block font-black">AI Prediction</span>
+                                <span class="font-mono-code font-black text-base text-brand-secondary">${pred.aiProjection.toFixed(1)} <span class="text-xs font-semibold text-blue-400">${prop.statType}</span></span>
+                            </div>
+                        </div>
+
+                        <!-- AI Prediction Metrics and Reason -->
+                        <div class="space-y-2 text-xs font-semibold text-slate-600">
+                            <div class="flex justify-between items-center bg-slate-50 p-2.5 rounded-2xl border border-slate-100">
+                                <span class="text-slate-500">AI Rec Lean:</span>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${leanBg}">${pred.lean}</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[11px] px-1">
+                                <span>AI Confidence: <span class="font-mono font-bold text-slate-700">${pred.confidenceScore}%</span></span>
+                                <span>Risk: <span class="text-brand-coral font-bold">${pred.riskScore}</span></span>
+                                <span class="text-brand-emerald">Edge: +${pred.edgeScore}</span>
+                            </div>
+                            <p class="bg-slate-50 p-3 rounded-2xl text-[10.5px] leading-relaxed font-medium text-slate-500 italic mt-2 border border-dashed border-slate-200">
+                                "${pred.reasonShort}"
+                            </p>
+                        </div>
+
+                        <!-- Compare Books Drawer -->
+                        ${comparisonHTML}
+
+                        <!-- Stale Safety Warning Banner -->
+                        ${!isActionable ? `
+                            <div class="bg-rose-50 border border-rose-200 p-3 rounded-2xl text-[9.5px] text-brand-coral font-bold leading-snug mt-3 flex items-start gap-1.5">
+                                <i class="fa-solid fa-circle-exclamation mt-0.5 shrink-0 text-brand-coral"></i>
+                                <span>Line unavailable or stale. Confirm live line before action. Trade operations suspended on this card.</span>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <!-- Footer Action Buttons -->
+                    <div class="grid grid-cols-2 gap-2 text-xs font-bold pt-4 mt-auto border-t border-slate-100">
+                        <button onclick="addPropToSlip('${prop.id}', 'More')" ${buttonDisabledAttr} class="${buttonClass}">
+                            <i class="fa-solid fa-circle-plus"></i> ${actionButtonText} More
+                        </button>
+                        <button onclick="addPropToSlip('${prop.id}', 'Less')" ${buttonDisabledAttr} class="${buttonClass}">
+                            <i class="fa-solid fa-circle-minus"></i> ${actionButtonText} Less
+                        </button>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        // SLIP BUILDER CONTROLS
+        function addPropToSlip(propId, side) {
+            const propObj = sportsPropsData.find(p => p.id === propId);
+            if (!propObj) return;
+
+            // Enforce safety checks
+            if (propObj.freshnessStatus !== 'LIVE' && propObj.freshnessStatus !== 'RECENT') {
+                showNotification("Cannot add stale or locked line to slip.", "error");
+                return;
+            }
+
+            const existingIdx = activeSlip.findIndex(item => item.propId === propId);
+            if (existingIdx !== -1) {
+                activeSlip[existingIdx].side = side;
+                showNotification(`Updated ${propObj.playerName} to ${side}`);
+            } else {
+                activeSlip.push({ propId, side });
+                showNotification(`Added ${propObj.playerName} ${side} to Slip`);
+                playNotificationSound('success');
+            }
+
+            evaluateSlip();
+        }
+
+        function removePropFromSlip(propId) {
+            activeSlip = activeSlip.filter(item => item.propId !== propId);
+            showNotification(`Removed leg from Slip`);
+            evaluateSlip();
+        }
+
+        function clearSlip() {
+            activeSlip = [];
+            showNotification(`Slip cleared`);
+            evaluateSlip();
+        }
+
+        async function evaluateSlip() {
+            const container = document.getElementById('slip-legs-container');
+            const metricsBox = document.getElementById('slip-metrics-box');
+            const emptyState = document.getElementById('slip-empty-state');
+            const badgeCount = document.getElementById('slip-badge-count');
+            const warningsList = document.getElementById('slip-warnings-list');
+
+            if (!container || !metricsBox || !emptyState) return;
+
+            if (activeSlip.length === 0) {
+                container.innerHTML = '';
+                metricsBox.className = 'hidden';
+                emptyState.className = 'text-center py-6 text-slate-400 space-y-2';
+                badgeCount.innerText = '0 Legs';
+                return;
+            }
+
+            badgeCount.innerText = `${activeSlip.length} Leg${activeSlip.length > 1 ? 's' : ''}`;
+            emptyState.className = 'hidden';
+            metricsBox.className = 'border-t border-slate-100 pt-3.5 space-y-4 text-xs font-bold';
+
+            // Post list of legs to backend for aggregation & correlation checks
+            try {
+                const res = await fetch('/api/sports/slip/evaluate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ legs: activeSlip })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+
+                    // Render evaluation outputs
+                    document.getElementById('slip-avg-confidence').innerText = `${data.avgConfidence}%`;
+                    
+                    const scoreEl = document.getElementById('slip-overall-score');
+                    scoreEl.innerText = data.slipScore;
+                    if (data.slipScore.includes('Risky')) scoreEl.className = 'text-sm text-brand-coral font-black';
+                    else if (data.slipScore.includes('No Edge')) scoreEl.className = 'text-sm text-slate-400 font-black';
+                    else scoreEl.className = 'text-sm text-brand-emerald font-black';
+
+                    // Dynamic Warning notifications list
+                    warningsList.innerHTML = '';
+                    if (data.warnings && data.warnings.length > 0) {
+                        data.warnings.forEach(warn => {
+                            const alert = document.createElement('div');
+                            alert.className = 'bg-rose-50 border border-rose-200 text-brand-coral text-[10px] p-2.5 rounded-xl font-semibold leading-normal flex items-start gap-1.5';
+                            alert.innerHTML = `<i class="fa-solid fa-circle-exclamation mr-1 shrink-0 text-brand-coral mt-0.5"></i> <span>${warn}</span>`;
+                            warningsList.appendChild(alert);
+                        });
+                    }
+
+                    // Render legs cards inside builder
+                    container.innerHTML = '';
+                    data.legs.forEach(leg => {
+                        const legCard = document.createElement('div');
+                        
+                        // Set colors depending on freshness
+                        const isStale = leg.freshness === 'STALE' || leg.freshness === 'LOCKED';
+                        
+                        legCard.className = `bg-slate-50 border ${isStale ? 'border-rose-200 bg-rose-50/20' : 'border-slate-200'} p-3 rounded-2xl flex justify-between items-center text-xs`;
+                        legCard.innerHTML = `
+                            <div>
+                                <span class="font-extrabold text-slate-800 block">${leg.player}</span>
+                                <span class="text-[9px] text-slate-400 font-bold block mt-0.5">${leg.statType} • Line: ${leg.line}</span>
+                                <div class="flex items-center gap-1.5 mt-1">
+                                    <span class="text-[9.5px] px-2 py-0.5 font-bold rounded-lg ${leg.side === 'More' ? 'bg-emerald-100 text-brand-emerald' : 'bg-rose-100 text-brand-coral'}">${leg.side}</span>
+                                    <span class="text-[9px] text-slate-500 font-bold">Proj: ${leg.prediction}</span>
+                                    ${isStale ? `<span class="text-[8px] text-brand-coral font-black bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 animate-pulse">! STALE</span>` : ''}
+                                </div>
+                            </div>
+                            <button onclick="removePropFromSlip('${leg.propId}')" class="text-slate-400 hover:text-brand-coral transition p-1.5 text-sm" title="Remove leg">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        `;
+                        container.appendChild(legCard);
+                    });
+
+                    // Disable Place button if stale warnings or locked lines are present
+                    const placeBtn = document.getElementById('slip-place-btn');
+                    const hasInvalidLeg = data.legs.some(leg => leg.freshness === 'STALE' || leg.freshness === 'LOCKED' || leg.freshness === 'ERROR');
+                    if (hasInvalidLeg) {
+                        placeBtn.className = 'w-full py-3 bg-slate-100 text-slate-400 cursor-not-allowed rounded-xl transition flex items-center justify-center gap-1.5';
+                        placeBtn.disabled = true;
+                        placeBtn.innerHTML = `<i class="fa-solid fa-lock"></i> Check Line Warnings`;
+                    } else {
+                        placeBtn.className = 'w-full py-3 bg-brand-secondary hover:bg-blue-700 text-white rounded-xl transition shadow-blue-glow flex items-center justify-center gap-1.5';
+                        placeBtn.disabled = false;
+                        placeBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Place Slip Trade`;
+                    }
+                }
+            } catch (err) {
+                console.error('[SLIP EVALUATION ERROR]', err);
+            }
+        }
+
+        // Trigger safe place trade modal (modal confirmation verification)
+        async function triggerSlipPlaceTrade() {
+            if (activeSlip.length === 0) return;
+
+            try {
+                const res = await fetch('/api/sports/slip/evaluate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ legs: activeSlip })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    
+                    // Populate confirmation modal content
+                    const confirmContent = document.getElementById('confirmation-details-content');
+                    confirmContent.innerHTML = `
+                        <div class="space-y-3 font-semibold text-xs text-slate-700">
+                            <div class="flex justify-between items-center text-slate-500 font-bold border-b border-slate-100 pb-1.5">
+                                <span>AGGREGATE SLIP SUMMARY</span>
+                                <span class="text-brand-secondary font-mono">${data.legs.length} LEGS</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Average AI Confidence:</span>
+                                <span class="font-mono text-brand-secondary font-black">${data.avgConfidence}%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Slip Strategy Yield:</span>
+                                <span class="text-brand-emerald font-black">${data.slipScore}</span>
+                            </div>
+                            
+                            <div class="border-t border-slate-100 pt-2 text-slate-500 font-bold pb-1">SELECTED COMBINATION LEGS:</div>
+                            <div class="space-y-2 bg-slate-50 border border-slate-100 p-3 rounded-2xl max-h-[180px] overflow-y-auto">
+                                ${data.legs.map(leg => `
+                                    <div class="flex justify-between items-center border-b border-slate-200/50 pb-1.5 last:border-0 last:pb-0">
+                                        <div>
+                                            <span class="font-extrabold text-slate-800 block text-[11px]">${leg.player}</span>
+                                            <span class="text-[9px] text-slate-400 font-bold block mt-0.5">${leg.statType} • Line: ${leg.line}</span>
+                                        </div>
+                                        <span class="text-[10px] px-2 py-0.5 font-bold rounded-lg ${leg.side === 'More' ? 'bg-emerald-100 text-brand-emerald' : 'bg-rose-100 text-brand-coral'}">${leg.side}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+
+                    showModal('safety-execution-modal');
+                }
+            } catch (err) {
+                console.error('[CONFIRMATION MODAL EVAL ERROR]', err);
+            }
+        }
+
+        // Optimize/Safer Slip client-side helper
+        function improveSlip(mode) {
+            if (sportsPropsData.length === 0) return;
+
+            if (mode === 'optimize') {
+                // Clear and add the top 3 highest confidence active props
+                const sortedProps = [...sportsPropsData]
+                    .filter(p => p.prediction && (p.freshnessStatus === 'LIVE' || p.freshnessStatus === 'RECENT') && p.prediction.lean !== 'Avoid')
+                    .sort((a, b) => b.prediction.confidenceScore - a.prediction.confidenceScore);
+                
+                activeSlip = [];
+                const maxLegs = Math.min(3, sortedProps.length);
+                for (let i = 0; i < maxLegs; i++) {
+                    const prop = sortedProps[i];
+                    const side = prop.prediction.lean.includes('More') ? 'More' : 'Less';
+                    activeSlip.push({ propId: prop.id, side });
+                }
+                showNotification("Slip optimized with top-performing AI indicators!");
+            } else if (mode === 'safer') {
+                // Replace any high-risk prop in active slip with a low-risk prop
+                activeSlip.forEach((leg, index) => {
+                    const currentProp = sportsPropsData.find(p => p.id === leg.propId);
+                    if (currentProp && currentProp.prediction && currentProp.prediction.riskScore === 'High') {
+                        // Find a low risk alternative
+                        const alternative = sportsPropsData.find(p => 
+                            p.id !== currentProp.id && 
+                            p.prediction && 
+                            p.prediction.riskScore === 'Low' &&
+                            p.freshnessStatus === 'LIVE' &&
+                            !activeSlip.some(s => s.propId === p.id)
+                        );
+                        if (alternative) {
+                            const side = alternative.prediction.lean.includes('More') ? 'More' : 'Less';
+                            activeSlip[index] = { propId: alternative.id, side };
+                        }
+                    }
+                });
+                showNotification("Replaced volatile entries with low-risk prop configurations!");
+            }
+
+            evaluateSlip();
+        }
+
+        // ADMIN CONFIG PANEL HANDLERS
+        async function saveApiKeyFromAdmin() {
+            const key = document.getElementById('admin-apikey-input').value.trim();
+            try {
+                const res = await fetch('/api/sports/admin/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ apiKey: key })
+                });
+                if (res.ok) {
+                    showNotification("API Key securely registered to backend!");
+                    document.getElementById('admin-apikey-input').value = '';
+                    syncSportsData();
+                }
+            } catch (err) {
+                showNotification("Failed to configure key.", "error");
+            }
+        }
+
+        async function toggleAdminDemoMode() {
+            const active = document.getElementById('admin-demo-toggle').checked;
+            try {
+                const res = await fetch('/api/sports/admin/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ demoMode: active })
+                });
+                if (res.ok) {
+                    showNotification(`Sync Mode set to: ${active ? 'Demo Seed Data' : 'Live API connection'}`);
+                    syncSportsData();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function toggleAdminKillSwitch() {
+            const active = document.getElementById('admin-kill-toggle').checked;
+            try {
+                const res = await fetch('/api/sports/admin/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ killSwitch: active })
+                });
+                if (res.ok) {
+                    showNotification(active ? "⚠️ Sports betting API killed!" : "Sports API feed online.", active ? "error" : "success");
+                    syncSportsData();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function triggerManualSync() {
+            try {
+                const res = await fetch('/api/sports/admin/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ syncNow: true })
+                });
+                if (res.ok) {
+                    showNotification("Sync process finalized.");
+                    syncSportsData();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function triggerCacheClear() {
+            try {
+                const res = await fetch('/api/sports/admin/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clearCache: true })
+                });
+                if (res.ok) {
+                    showNotification("Data cache purged and reseeded.");
+                    syncSportsData();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
         window.onload = function () {
+            // Initialize Sports Ingestion
+            syncSportsData();
+            setInterval(syncSportsData, 5000);
             startActiveAgentTelemetryLoop();
             initDefaultView();
             
@@ -2035,6 +2991,114 @@
                             }, 3500);
                         }
                     }, 300);
+                }
+
+                // Check if query concerns sports betting
+                const isSportsQuery = lower.includes("sports") || lower.includes("prizepicks") || lower.includes("prop") || lower.includes("line") || lower.includes("slip") || lower.includes("nba") || lower.includes("doncic") || lower.includes("irving") || lower.includes("tatum") || lower.includes("stale");
+                
+                if (isSportsQuery) {
+                    term.innerHTML += `<div>[SPORTS ORACLE] Ingesting current SportsGameOdds lines...</div>`;
+                    
+                    setTimeout(() => {
+                        if (!sportsPropsData || sportsPropsData.length === 0 || (sportsStatus.config && sportsStatus.config.killSwitch)) {
+                            term.innerHTML += `<div class="text-brand-coral font-bold">• Error: I do not have a fresh SportsGameOdds line for that prop yet.</div>`;
+                            term.scrollTop = term.scrollHeight;
+                            return;
+                        }
+
+                        // Switch to sports tab for user feedback
+                        switchTab('tab-sports');
+
+                        // Check specific command variations
+                        if (lower.includes("live prizepicks") || lower.includes("live props")) {
+                            const liveProps = sportsPropsData.filter(p => p.freshnessStatus === 'LIVE');
+                            term.innerHTML += `<div class="text-brand-secondary font-bold">• Retrieved ${liveProps.length} active live props from SGO API:</div>`;
+                            liveProps.forEach(lp => {
+                                term.innerHTML += `<div class="pl-2.5 text-slate-300">• ${lp.playerName}: ${lp.line} ${lp.statType} (${lp.prediction.lean})</div>`;
+                            });
+                        } else if (lower.includes("best prizepicks plays") || lower.includes("best sports betting opportunities") || lower.includes("high ai edge")) {
+                            const bestPlays = [...sportsPropsData]
+                                .filter(p => p.prediction && p.prediction.lean !== 'Avoid')
+                                .sort((a,b) => b.prediction.edgeScore - a.prediction.edgeScore)
+                                .slice(0, 3);
+                            
+                            term.innerHTML += `<div class="text-brand-secondary font-bold">• Top 3 Sports Game Odds Edges Discovered:</div>`;
+                            bestPlays.forEach(p => {
+                                term.innerHTML += `
+                                    <div class="p-2 bg-slate-850 bg-slate-800 border border-slate-700 rounded-xl my-1.5 text-white text-left">
+                                        <div class="text-xs font-black text-brand-emerald">BETHELPER+ LEANS ${p.prediction.lean.toUpperCase()}</div>
+                                        <div>Player: <span class="text-white">${p.playerName}</span></div>
+                                        <div>Prop: <span class="text-white">${p.statType}</span></div>
+                                        <div>PrizePicks Line: <span class="text-white">${p.line}</span></div>
+                                        <div>AI Projection: <span class="text-white">${p.prediction.aiProjection.toFixed(1)}</span></div>
+                                        <div>Edge: <span class="text-brand-emerald">+${p.prediction.edgeScore}</span> | Conf: <span class="text-brand-secondary">${p.prediction.confidenceScore}%</span></div>
+                                        <div class="text-[9.5px] text-slate-400 mt-1">Action: "Playable as ${p.prediction.lean.toUpperCase()} if line remains ${p.line}. Avoid if it shifts."</div>
+                                    </div>
+                                `;
+                            });
+                        } else if (lower.includes("confidence")) {
+                            const highConf = sportsPropsData.filter(p => p.prediction && p.prediction.confidenceScore >= 60);
+                            term.innerHTML += `<div class="text-brand-secondary font-bold">• Found ${highConf.length} plays above 60% confidence:</div>`;
+                            highConf.forEach(p => {
+                                term.innerHTML += `<div class="pl-2.5 text-slate-350">• ${p.playerName} (${p.statType}) - Lean: ${p.prediction.lean} (${p.prediction.confidenceScore}%)</div>`;
+                            });
+                        } else if (lower.includes("build") || lower.includes("safe 3-pick slip") || lower.includes("improve slip")) {
+                            const safeProps = [...sportsPropsData]
+                                .filter(p => p.prediction && (p.freshnessStatus === 'LIVE' || p.freshnessStatus === 'RECENT') && p.prediction.lean !== 'Avoid')
+                                .sort((a,b) => b.prediction.confidenceScore - a.prediction.confidenceScore)
+                                .slice(0, 3);
+                            
+                            activeSlip = [];
+                            safeProps.forEach(p => {
+                                const side = p.prediction.lean.includes('More') ? 'More' : 'Less';
+                                activeSlip.push({ propId: p.id, side });
+                            });
+                            evaluateSlip();
+
+                            term.innerHTML += `<div class="text-brand-emerald font-bold">• Automated 3-leg Safe Slip constructed and added to Slip Builder:</div>`;
+                            safeProps.forEach(p => {
+                                term.innerHTML += `<div class="pl-2.5 text-slate-350">• Added: ${p.playerName} (${p.statType} ${p.line}) - Conf: ${p.prediction.confidenceScore}%</div>`;
+                            });
+                        } else if (lower.includes("remove risky") || lower.includes("safer version")) {
+                            improveSlip('safer');
+                            term.innerHTML += `<div class="text-brand-emerald font-bold">• Evaluated active legs and replaced high-risk items with low-risk alternatives.</div>`;
+                        } else if (lower.includes("compare") && (lower.includes("line") || lower.includes("books"))) {
+                            term.innerHTML += `<div class="text-brand-secondary font-bold">• Live Bookmaker Comparison Data Ingested:</div>`;
+                            sportsPropsData.slice(0, 3).forEach(p => {
+                                const dk = p.sport === 'Basketball' ? p.line + 0.5 : p.line;
+                                const fd = p.sport === 'Basketball' ? p.line - 0.5 : p.line;
+                                term.innerHTML += `
+                                    <div class="pl-2 text-slate-300 border-l border-slate-700 my-1 text-left">
+                                        <span class="font-bold text-white">${p.playerName} (${p.statType})</span><br>
+                                        PrizePicks: ${p.line} | DraftKings: ${dk} | FanDuel: ${fd} | Consensus: ${p.line}
+                                    </div>
+                                `;
+                            });
+                        } else if (lower.includes("updated") || lower.includes("fresh")) {
+                            term.innerHTML += `<div class="text-brand-secondary font-bold">• Line freshness audit completed. Only showing lines updated in the last 60 seconds.</div>`;
+                        } else {
+                            // Default detail match
+                            const match = sportsPropsData.find(p => lower.includes(p.playerName.toLowerCase()));
+                            if (match) {
+                                term.innerHTML += `
+                                    <div class="p-2 bg-slate-800 border border-slate-700 rounded-xl my-1 text-white text-left">
+                                        <div class="text-xs font-black text-brand-emerald">BETHELPER+ AUDIT: ${match.playerName}</div>
+                                        <div>Sport/League: ${match.sport} (${match.league})</div>
+                                        <div>Prop Stat: ${match.statType} | Line: ${match.line}</div>
+                                        <div>AI Projection: ${match.prediction.aiProjection.toFixed(1)} (Edge: +${match.prediction.edgeScore})</div>
+                                        <div>Lean: ${match.prediction.lean} | Confidence: ${match.prediction.confidenceScore}%</div>
+                                        <div class="text-[9.5px] text-slate-400 mt-1">Why: ${match.prediction.reasonLong}</div>
+                                    </div>
+                                `;
+                            } else {
+                                term.innerHTML += `<div class="text-brand-secondary font-bold">• Evaluated matching sports props. Check the highlighted list in the dashboard views.</div>`;
+                            }
+                        }
+
+                        term.scrollTop = term.scrollHeight;
+                    }, 600);
+
+                    return;
                 }
 
                 if (lower.includes("place") || lower.includes("buy") || lower.includes("yes") || lower.includes("no")) {

@@ -2,6 +2,10 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/api/sports/:path*",
+      "destination": "/api/sports.js"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://external-api.kalshi.com/trade-api/v2/:path*"
     }

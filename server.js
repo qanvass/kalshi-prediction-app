@@ -21,7 +21,14 @@ const server = http.createServer((req, res) => {
 
     const parsedUrl = url.parse(req.url, true);
 
-    // Proxy API requests
+    // Route SportsGameOdds requests
+    if (parsedUrl.pathname.startsWith('/api/sports')) {
+        const handleSports = require('./api/sports.js');
+        handleSports(req, res);
+        return;
+    }
+
+    // Proxy API requests (Kalshi)
     if (parsedUrl.pathname.startsWith('/api/')) {
         // Strip /api prefix and append /trade-api/v2
         const targetPath = parsedUrl.pathname.replace(/^\/api/, '/trade-api/v2') + (parsedUrl.search || '');
