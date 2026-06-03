@@ -4,7 +4,7 @@ const https = require('https');
 // Global configuration state (persisted in-memory on the backend instance)
 let config = {
     apiKey: process.env.SPORTSGAMEODDS_API_KEY || '',
-    baseUrl: process.env.SPORTSGAMEODDS_BASE_URL || 'https://api.sportsgameodds.com/v1',
+    baseUrl: process.env.SPORTSGAMEODDS_BASE_URL || 'https://api.sportsgameodds.com/v2',
     enableWebsocket: process.env.SPORTSGAMEODDS_ENABLE_WEBSOCKET === 'true',
     pregameRefresh: parseInt(process.env.SPORTSGAMEODDS_REFRESH_PREGAME_SECONDS || '30', 10),
     liveRefresh: parseInt(process.env.SPORTSGAMEODDS_REFRESH_LIVE_SECONDS || '5', 10),
@@ -334,6 +334,209 @@ function updateFreshnessStatuses() {
     });
 }
 
+// Helper to parse V2 /events endpoint response format to populate our local active props array (activeProps)
+function ingestV2Events(response) {
+    if (!response || !response.success || !Array.isArray(response.data)) {
+        return;
+    }
+    const eventsList = response.data;
+    const groupedProps = {};
+    const now = Date.now();
+
+    // Helper to map SGO sportID to our sport name
+    const mapSport = (sportID) => {
+        if (!sportID) return 'Basketball';
+        const s = sportID.toLowerCase();
+        if (s.includes('basket')) return 'Basketball';
+        if (s.includes('base')) return 'Baseball';
+        if (s.includes('foot')) return 'Football';
+        if (s.includes('hock')) return 'Hockey';
+        if (s.includes('soccer')) return 'Soccer';
+        if (s.includes('mma') || s.includes('ufc')) return 'MMA';
+        if (s.includes('golf')) return 'Golf';
+        return sportID;
+    };
+
+    // Helper to map SGO leagueID to our league name
+    const mapLeague = (leagueID) => {
+        if (!leagueID) return 'NBA';
+        return leagueID.toUpperCase();
+    };
+
+    // Helper to map team name/ID to 3-letter abbreviation
+    const mapTeamAbbr = (teamID, teamName) => {
+        const idStr = (teamID || '').toUpperCase();
+        const nameStr = (teamName || '').toUpperCase();
+        
+        if (idStr.includes('CELTICS') || nameStr.includes('CELTICS')) return 'BOS';
+        if (idStr.includes('MAVERICKS') || nameStr.includes('MAVERICKS')) return 'DAL';
+        if (idStr.includes('FEVER') || nameStr.includes('FEVER')) return 'IND';
+        if (idStr.includes('SKY') || nameStr.includes('SKY')) return 'CHI';
+        if (idStr.includes('YANKEES') || nameStr.includes('YANKEES')) return 'NYY';
+        if (idStr.includes('RED_SOX') || nameStr.includes('RED SOX')) return 'BOS';
+        if (idStr.includes('OILERS') || nameStr.includes('OILERS')) return 'EDM';
+        if (idStr.includes('PANTHERS') || nameStr.includes('PANTHERS')) return 'FLA';
+        if (idStr.includes('HEAT') || nameStr.includes('HEAT')) return 'MIA';
+        if (idStr.includes('LAKERS') || nameStr.includes('LAKERS')) return 'LAL';
+        
+        // Default to first 3 letters of name or ID
+        const clean = (teamName || teamID || 'UNK').replace(/[^a-zA-Z]/g, '');
+        return clean.substring(0, 3).toUpperCase();
+    };
+
+    // Helper to map SGO statID to our display statType
+    const mapStatType = (statID) => {
+        if (!statID) return 'Points';
+        const s = statID.toLowerCase();
+        if (s === 'points') return 'Points';
+        if (s === 'assists') return 'Assists';
+        if (s === 'rebounds') return 'Rebounds';
+        if (s === 'blocks') return 'Blocks';
+        if (s === 'steals') return 'Steals';
+        if (s.includes('home run')) return 'Home Runs';
+        if (s === 'hits') return 'Hits';
+        if (s === 'runs') return 'Runs';
+        if (s === 'shots') return 'Shots';
+        if (s.includes('points+rebounds+assists') || s.includes('pra')) return 'Points + Rebounds + Assists';
+        if (s.includes('points+rebounds')) return 'Points + Rebounds';
+        if (s.includes('points+assists')) return 'Points + Assists';
+        if (s.includes('rebounds+assists')) return 'Rebounds + Assists';
+        
+        // Capitalize words
+        return statID.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    };
+
+    eventsList.forEach(ev => {
+        const eventId = ev.eventID;
+        const sport = mapSport(ev.sportID);
+        const league = mapLeague(ev.leagueID);
+        const homeTeamName = ev.teams?.home?.names?.medium || ev.teams?.home?.names?.long || 'Home';
+        const awayTeamName = ev.teams?.away?.names?.medium || ev.teams?.away?.names?.long || 'Away';
+        const homeAbbr = mapTeamAbbr(ev.teams?.home?.teamID, homeTeamName);
+        const awayAbbr = mapTeamAbbr(ev.teams?.away?.teamID, awayTeamName);
+        
+        const playersMap = ev.players || {};
+        const oddsMap = ev.odds || {};
+        
+        const startsAt = ev.status?.startsAt ? Date.parse(ev.status.startsAt) : (now + 2 * 3600 * 1000);
+        const isLive = ev.status?.live === true;
+        const isCompleted = ev.status?.completed === true || ev.status?.ended === true;
+        const isCancelled = ev.status?.cancelled === true;
+        
+        Object.keys(oddsMap).forEach(oddID => {
+            const market = oddsMap[oddID];
+            if (!market || !market.byBookmaker) return;
+            
+            // Check for PrizePicks (case insensitive)
+            const ppOdds = market.byBookmaker.prizepicks || market.byBookmaker.PrizePicks;
+            if (!ppOdds || ppOdds.available === false) return;
+            
+            const playerID = market.playerID || market.statEntityID;
+            if (!playerID || playerID === 'home' || playerID === 'away' || playerID === 'all') return;
+            
+            const playerInfo = playersMap[playerID] || {};
+            const playerName = playerInfo.name || playerInfo.names?.display || market.marketName || 'Unknown Player';
+            const playerTeamID = playerInfo.teamID;
+            
+            // Determine player team and opponent
+            let playerTeam = 'DAL'; // fallback
+            let opponentTeam = 'BOS'; // fallback
+            if (playerTeamID) {
+                const mappedPlayerTeam = mapTeamAbbr(playerTeamID, '');
+                if (mappedPlayerTeam === homeAbbr) {
+                    playerTeam = homeAbbr;
+                    opponentTeam = awayAbbr;
+                } else if (mappedPlayerTeam === awayAbbr) {
+                    playerTeam = awayAbbr;
+                    opponentTeam = homeAbbr;
+                } else {
+                    playerTeam = mappedPlayerTeam;
+                    opponentTeam = (playerTeam === homeAbbr) ? awayAbbr : homeAbbr;
+                }
+            } else {
+                playerTeam = homeAbbr;
+                opponentTeam = awayAbbr;
+            }
+            
+            const statType = mapStatType(market.statID);
+            const period = market.periodID || 'game';
+            
+            // Group by event, player, stat type, and period
+            const groupKey = `${eventId}_${playerID}_${market.statID}_${period}`;
+            
+            // Line value: bookOverUnder is typically PrizePicks line, or fairOverUnder
+            const lineVal = parseFloat(market.bookOverUnder || market.fairOverUnder || market.fairSpread || '0');
+            const side = (market.sideID || '').toLowerCase();
+            const price = parseInt(ppOdds.odds, 10) || -119;
+            const deeplink = ppOdds.deeplink || '';
+            const lastUpdated = Date.parse(ppOdds.lastUpdatedAt) || now;
+
+            if (!groupedProps[groupKey]) {
+                groupedProps[groupKey] = {
+                    providerPropId: groupKey,
+                    provider: 'SportsGameOdds',
+                    book: 'PrizePicks',
+                    sport,
+                    league,
+                    eventId,
+                    playerId: playerID,
+                    playerName,
+                    team: playerTeam,
+                    opponent: opponentTeam,
+                    statType,
+                    line: lineVal,
+                    overPrice: -119,
+                    underPrice: -119,
+                    deeplinkOver: '',
+                    deeplinkUnder: '',
+                    prizePicksSideOptions: ['Over', 'Under'],
+                    startTime: startsAt,
+                    status: isCancelled ? 'suspended' : isCompleted ? 'suspended' : isLive ? 'active' : 'active',
+                    lastUpdatedAt: lastUpdated,
+                    ingestedAt: now,
+                    freshnessStatus: isLive ? 'LIVE' : 'RECENT',
+                    sourcePayloadHash: ''
+                };
+            }
+            
+            const propObj = groupedProps[groupKey];
+            if (lineVal > 0) propObj.line = lineVal;
+            
+            if (side === 'over' || side === 'yes') {
+                propObj.overPrice = price;
+                propObj.deeplinkOver = deeplink;
+            } else if (side === 'under' || side === 'no') {
+                propObj.underPrice = price;
+                propObj.deeplinkUnder = deeplink;
+            }
+            
+            if (lastUpdated > propObj.lastUpdatedAt) {
+                propObj.lastUpdatedAt = lastUpdated;
+            }
+        });
+    });
+
+    const parsedProps = Object.values(groupedProps);
+    if (parsedProps.length > 0) {
+        parsedProps.forEach((prop, index) => {
+            prop.id = `sp_${index + 1}`;
+            prop.sourcePayloadHash = getPayloadHash(prop);
+        });
+        
+        activeProps = parsedProps;
+        
+        // Re-generate predictions
+        aiPredictions = {};
+        activeProps.forEach(prop => {
+            generateAIPredictionForProp(prop);
+        });
+        
+        console.log(`[SportsGameOdds Ingest V2] Successfully ingested ${activeProps.length} player props!`);
+    } else {
+        console.log(`[SportsGameOdds Ingest V2] No PrizePicks player props found in response.`);
+    }
+}
+
 // Ingestion Loop representing the live SportsGameOdds API call
 function runLiveIngestion() {
     if (config.killSwitch) {
@@ -381,14 +584,11 @@ function runLiveIngestion() {
         config.syncStatus = 'Success';
         updateFreshnessStatuses();
     } else {
-        // Here we would call external HTTPS request to SportsGameOdds API using config.apiKey
-        // For security and API safety, let's execute standard endpoint query
-        const endpoint = `${config.baseUrl}/props?book=PrizePicks`;
+        // Fetch from combined SGO V2 events endpoint for player props
+        const endpoint = `${config.baseUrl}/events?type=prop&bookmakerID=prizepicks`;
         
-        // Log starting fetch
-        console.log(`[SportsGameOdds Ingest] Fetching live lines from: ${endpoint}`);
+        console.log(`[SportsGameOdds Ingest V2] Fetching live lines from: ${endpoint}`);
         
-        // We write an HTTP check. If the query fails, we log the error.
         fetchFromSportsGameOddsAPI((err, data) => {
             if (err) {
                 config.syncStatus = 'Error';
@@ -397,11 +597,12 @@ function runLiveIngestion() {
             } else {
                 config.syncStatus = 'Success';
                 config.lastSync = Date.now();
-                // If real data returned, ingest it here
-                // For safety, if API returns unauthorized (e.g. key is wrong/default), we flag ERROR
                 if (data.error || data.status === 'unauthorized') {
                     config.syncStatus = 'Error';
                     logAdminError('API Authentication Failed. Invalid API key provided.', data);
+                } else {
+                    // Ingest the V2 data
+                    ingestV2Events(data);
                 }
             }
             updateFreshnessStatuses();
@@ -424,7 +625,7 @@ function fetchFromSportsGameOddsAPI(callback) {
         timeout: 5000
     };
 
-    https.get(`${config.baseUrl}/props?book=PrizePicks`, options, (res) => {
+    https.get(`${config.baseUrl}/events?type=prop&bookmakerID=prizepicks`, options, (res) => {
         let rawData = '';
         res.on('data', (chunk) => { rawData += chunk; });
         res.on('end', () => {
@@ -443,8 +644,8 @@ function fetchFromSportsGameOddsAPI(callback) {
 // Initialize repositories
 initializePropsRepo();
 
-// Start periodic polling background process (local server context helper)
-const cacheInterval = setInterval(runLiveIngestion, 5000);
+// Start periodic polling background process (strictly 15s to preserve API keys from rate bans)
+const cacheInterval = setInterval(runLiveIngestion, 15000);
 
 // Exports Vercel/Node Serverless route controller
 module.exports = function handleRoute(req, res) {

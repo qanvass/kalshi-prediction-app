@@ -1,0 +1,128 @@
+Title: Live Content
+
+Description: Fetched live
+
+Source: https://sportsgameodds.com/docs/info/v1-to-v2
+
+---
+
+Migration Guide - V1 to V2 APISportsGameOddsDocsFAQPricingDataGet API KeySportsGameOddsSearch⌘KReferenceData ExplorerSDKBasicsSetupQuickstartCheat SheetAI (Vibe Coding)GuidesGetting Data in BatchesHandling OddsFetching TeamsImproving Response TimesRealtime Data StreamBest PracticesData TypesMarketsBookmakers (bookmakerID)Sports (sportID)Leagues (leagueID)Stats (statID)Stat Entity (statEntityID)Periods (periodID)Bet Types (betTypeID & sideID)Putting it Together (oddID)EndpointsGET /events/GET /teams/GET /players/GET /sports/GET /leagues/GET /stats/GET /markets/GET /account/usage/Other InfoGlossaryErrorsConsensus OddsUpgrading to v2ExamplesLive Odds TrackerArbitrage CalculatorOdds Comparison DashboardPlayer Props AnalyzerParlay BuilderFAQGet HelpUpgrading to v2Copy MarkdownOpenMigration Guide - V1 to V2 API
+Overview of Changes
+
+Odds can update significantly more frequently - We overhauled our system which aggregates and syncs odds data to the API, allowing us to significantly speed up the polling frequency of odds data and offer data at less than 50% the delay of the previous system. Effects on your data depend on tier.
+Faster API Response Times - When fetching data from the API, you should receive data significantly faster. This change affects both v1 and v2 endpoints. Note that v2 responses often contain more data than v2 which may affect response times.
+Combined /odds and /events endpoints - You no longer need to query one endpoint to get odds breakdowns by sportsbook and another endpoint to get event metadata (status, teams, players, results, etc.). All of this data has now been combined into a single /v2/events endpoint.
+Added deeplinks to odds data - We've added a deeplink field to the bookmaker-specific odds data. Only major US sportsbooks were included at launch (FanDuel, Draftkings, BetMGM) with more to come soon after.
+Bookmaker-specific odds persist when unavailable/inactive - Previously, odds for a specific bookmaker (under the byBookmaker field) would only show when those odds were actively being offered (open for wagers) by that bookmaker and would disappear when no longer offered. In v2, all odds (both for main lines and alt lines) will show along with an available field which tells you whether those odds are actively being offered (open for wagers).
+Improved Player System - Players are now unique across all teams in a league. This means a player will have the same playerID regardless of which team they are on. This new player system also allows us to return a higher number of player props odds and results/stats data when querying Events.
+More request options added to Events (/Odds) endpoint We added 10 additional parameters to the /events endpoint to help you zero-in on the data you need. Even more options are coming soon.
+
+Upgrade Guide
+ImportantSome of the changes made to the v2 API cause the /events endpoint it to return a lot of data. We highly recomend you make use of the new params we've added to the /events endpoint in order ensure
+you're only requesting the data you need. This helps keep the API running fast for both yourself as well as everyone else. Thanks!
+Change the URLs you use to access the API to use the new v2 endpoints by simply swapping v1 for v2.
+- https://api.sportsgameodds.com/v1/...
++ https://api.sportsgameodds.com/v2/...
+Change any request to either v1/events or v1/odds endpoints to use the new combined v2/events endpoint (there is no v2/odds endpoint)
+- https://api.sportsgameodds.com/v1/events...
+- https://api.sportsgameodds.com/v1/odds...
++ https://api.sportsgameodds.com/v2/events...
+The v2/events endpoint now returns everything found in the v1/events + v1/odds endpoints
+If you were parsing data from the v1/events endpoint's odds object, (not the v1/odds endpoint's odds object) then you will need to make some changes:
+
+Event.odds.<oddID>.odds -> Event.odds.<oddID>.fairOdds
+Event.odds.<oddID>.spread -> Event.odds.<oddID>.fairSpread
+Event.odds.<oddID>.overUnder -> Event.odds.<oddID>.fairOverUnder
+Event.odds.<oddID>.closeOdds -> Event.odds.<oddID>.closeFairOdds
+Event.odds.<oddID>.closeSpread -> Event.odds.<oddID>.closeFairSpread
+Event.odds.<oddID>.closeOverUnder -> Event.odds.<oddID>.closeFairOverUnder
+Event.odds.<oddID>.isFallbackOdds -> REMOVED
+
+We previously showed placeholder even money odds marked with isFallbackOdds = true when odds were not yet available. This is no longer the case in v2.
+
+Some event status fields changes
+
+Event.status.hasMarketOdds -> Event.status.oddsPresent
+Event.status.hasAnyOdds -> Event.status.oddsPresent
+Event.status.anyOddsAvailable -> Event.status.oddsAvailable
+Event.status.marketOddsAvailable -> Event.status.oddsAvailable
+Event.status.nextUpdateAt -> REMOVED
+
+Event players changed in certain cases
+The Event.players object returned by the /v2/events endpoint will include each player's new playerID.
+On v1 of the API, any players already attached to an event (meaning there were odds or results data on the event for that player) by Jan 31, 2025 will remain unaffected. However, players attached after this date will carry the new/V2 playerID on the Event. Reach out to support if this may pose a problem to you.
+Add the includeAltLines parameter to /v2/events requests if you need alt lines by bookmaker.
+By default, altLines are not included in v2 responses. To also include altLines add the parameter includeAltLines=true to your request. Please note that this can significantly increase the amount of data returned which in turn will increase latency of response times.
+Filter out unavailable byBookmaker odds if needed
+Odds returned in the byBookmaker now include both available and unavailable odds. Each item in byBookmaker has an available field to tell you whether those odds are currently available. Therefore, if you only care about bookmaker-specific odds which are available and open for wagers, you'll need to ignore/filter any byBookmaker odds where available == false. You'll find the available field at the following path:
++ Event.odds.<oddID>.byBookmaker.<bookmakerID>.available
++ Event.odds.<oddID>.byBookmaker.<bookmakerID>.altLines.[i].available
+Parse player names data from different path on Player objects
+Player names are now wrapped in a name object and the variation name has been renamed to display
+
+Player.firstName -> Player.names.firstName
+Player.lastName -> Player.names.lastName
+Player.name -> Player.names.display
+
+NOTE: This does not affect the player data found on Events (at Event.players.{playerID})
+Update saved/stored playerIDs
+NoticeIf you haven't saved playerIDs anywhere in your system or wouldn't run into issues if a player's playerID changed, then you can skip this section.
+All playerIDs have changed.. If you have saved a list of playerID values somewhere in your system which you use to identify certain players, you will likely need to update those playerIDs to use the player's new value. The format of playerIDs changed like so:
+- PLAYER_NAME_TEAM_ID_LEAGUE_ID
++ PLAYER_NAME_NUMBER_LEAGUE_ID
+And since players with the exact same name are rare, the vast majority of players were renamed like so:
+- PATRICK_MAHOMES_KANSAS_CITY_CHIEFS_NFL
++ PATRICK_MAHOMES_1_NFL
+However, while this covers most cases, be warned that there are a number of discrepancies. Therefore, migrating your saved playerIDs using the above pattern is NOT RECOMMENDED. Instead we recommend the following approaches to convert between old and new playerID formats in the more accurate possible way:
+v1 playerID -> v2 playerID
+Here we recommend calling the v2/players endpoint and supplying an alias param. This will return a single Player object with the new playerID
+
+v2 playerID -> v1 playerID
+Here we recommend calling the v2/players endpoint providing the v2 playerID as the playerID param and then finding the v1 playerID you're looking for in the response's aliases field
+
+New Features & Non-Breaking Changes
+The API key can now be included in the URL query params
+You no longer have to include your API key in the headers. You can also include it in the request query params instead.
+https://api.sportsgameodds.com/v2/events?apiKey=YOUR_API_KEY_CAN_GO_HERE
+New params for v2/events endpoint
+
+type - Only include Events of the specified type which can be match, prop, or tournament
+oddsPresent - Whether you want only Events which do (true) or do not (false) have any associated odds markets regardless of whether those odds markets are currently available (open for wagering)
+includeOpposingOdds - Whether to include opposing odds for each included oddID. This was renamed from includeOpposingOddIDs in v1 but the old name will still work.
+includeAltLines - Whether to include alternate lines in the odds byBookmaker data
+bookmakerID - A bookmakerID or comma-separated list of bookmakerIDs to include odds for
+teamID - A teamID or comma-separated list of teamIDs to include Events (and associated odds) for
+playerID - A single playerID or comma-separated list of playerIDs to include Events (and associated odds) for
+live - Only include live Events (true), only non-live Events (false) or all Events (omit)
+started - Only include Events which have have previously started (true), only Events which have not previously started (false) or all Events (omit)
+ended - Only include Events which have have ended (true), only Events which have not ended (false) or all Events (omit)
+cancelled - Only include cancelled Events (true), only non-cancelled Events (false) or all Events (omit)
+includeOpenCloseOdds - Whether to include open and close odds values (openOdds, closeOdds, openSpread, closeSpread, openOverUnder, closeOverUnder) in the odds byBookmaker data. Defaults to false.
+
+New deeplink fields
+You'll be able to find deeplink information on a per-bookmaker basis at the following path on Event objects:
+Event.odds.<oddID>.byBookmaker.<bookmakerID>.deeplink
+Deeplinks will also appear on altLines but only if they are different from the deeplink value on the main line
+Event.odds.<oddID>.byBookmaker.<bookmakerID>.altLines.[i].deeplink
+Market name field added to odds
+Odds items now contain a human-readable marketName field.
+Standardized weight, height and salary fields
+These should now return a more consistent string-based value including units.
+Added nickname and suffix to player names
+These fields will show only when applicable
+Renamed Parameters with Backwards Compatibility
+Certain API request options/parameters have been renamed. However all of the previous names will still work. For example, we've renamed includeOpposingOddIDs to includeOpposingOdds but the old param will also still work
+Per-request default and max limits have changed
+
+For /events
+
+default limit: 30 -> 10
+max limit: 300 -> 100
+
+For teams and players
+
+default limit: 30 -> 50
+max limit: 300 -> 250
+
+View this page as markdownDocumentation index for LLMsFull documentation for LLMsConsensus OddsPrevious PageLive Odds TrackerNext PageOn this pageMigration Guide - V1 to V2 APIOverview of ChangesUpgrade GuideChange the URLs you use to access the API to use the new v2 endpoints by simply swapping v1 for v2.Change any request to either v1/events or v1/odds endpoints to use the new combined v2/events endpoint (there is no v2/odds endpoint)The v2/events endpoint now returns everything found in the v1/events + v1/odds endpointsSome event status fields changesEvent players changed in certain casesAdd the includeAltLines parameter to /v2/events requests if you need alt lines by bookmaker.Filter out unavailable byBookmaker odds if neededParse player names data from different path on Player objectsUpdate saved/stored playerIDsv1 playerID -> v2 playerIDv2 playerID -> v1 playerIDNew Features & Non-Breaking ChangesThe API key can now be included in the URL query paramsNew params for v2/events endpointNew deeplink fieldsMarket name field added to oddsStandardized weight, height and salary fieldsAdded nickname and suffix to player namesRenamed Parameters with Backwards CompatibilityPer-request default and max limits have changed
+

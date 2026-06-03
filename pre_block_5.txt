@@ -1,0 +1,4 @@
+{
+  "error": "An error message",
+  "success": false
+}
