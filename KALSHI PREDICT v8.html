@@ -1558,7 +1558,7 @@
         }
 
         function enrichPropData(prop) {
-            // Color mapping
+            // Color mapping and metadata mappings
             let primaryColor = "#64748B";
             let secondaryColor = "#FFFFFF";
             let jerseyColor = "#64748B";
@@ -1566,32 +1566,46 @@
             let hairStyle = "short";
             let position = "G";
             let jerseyNumber = "0";
+            let espnId = "";
+            let sportSlug = "";
 
             const name = prop.playerName;
             if (name === "Luka Doncic") {
                 jerseyColor = "#00538C"; primaryColor = "#00538C"; secondaryColor = "#FFFFFF"; skinColor = "#FFDBAC"; hairStyle = "short"; position = "G"; jerseyNumber = "77";
+                espnId = "4395628"; sportSlug = "nba";
             } else if (name === "Kyrie Irving") {
                 jerseyColor = "#00538C"; primaryColor = "#00538C"; secondaryColor = "#FFFFFF"; skinColor = "#8D5524"; hairStyle = "short"; position = "G"; jerseyNumber = "11";
+                espnId = "6442"; sportSlug = "nba";
             } else if (name === "Jayson Tatum") {
                 jerseyColor = "#007A33"; primaryColor = "#007A33"; secondaryColor = "#FFFFFF"; skinColor = "#8D5524"; hairStyle = "short"; position = "F"; jerseyNumber = "0";
+                espnId = "4065648"; sportSlug = "nba";
             } else if (name === "Jaylen Brown") {
                 jerseyColor = "#007A33"; primaryColor = "#007A33"; secondaryColor = "#FFFFFF"; skinColor = "#8D5524"; hairStyle = "curly"; position = "G/F"; jerseyNumber = "7";
+                espnId = "3917376"; sportSlug = "nba";
             } else if (name === "Dereck Lively II") {
                 jerseyColor = "#00538C"; primaryColor = "#00538C"; secondaryColor = "#FFFFFF"; skinColor = "#8D5524"; hairStyle = "curly"; position = "C"; jerseyNumber = "2";
+                espnId = "4684824"; sportSlug = "nba";
             } else if (name === "Kristaps Porzingis") {
                 jerseyColor = "#007A33"; primaryColor = "#007A33"; secondaryColor = "#FFFFFF"; skinColor = "#FFDBAC"; hairStyle = "short"; position = "F/C"; jerseyNumber = "8";
+                espnId = "3102533"; sportSlug = "nba";
             } else if (name === "Caitlin Clark") {
                 jerseyColor = "#0C2340"; primaryColor = "#0C2340"; secondaryColor = "#FDBB30"; skinColor = "#FFDBAC"; hairStyle = "long"; position = "G"; jerseyNumber = "22";
+                espnId = "4432776"; sportSlug = "wnba";
             } else if (name === "Angel Reese") {
                 jerseyColor = "#41B6E6"; primaryColor = "#41B6E6"; secondaryColor = "#FFFFFF"; skinColor = "#8D5524"; hairStyle = "long"; position = "F"; jerseyNumber = "5";
+                espnId = "5115594"; sportSlug = "wnba";
             } else if (name === "Aaron Judge") {
                 jerseyColor = "#0C2340"; primaryColor = "#0C2340"; secondaryColor = "#FFFFFF"; skinColor = "#FFDBAC"; hairStyle = "short"; position = "OF"; jerseyNumber = "99";
+                espnId = "33194"; sportSlug = "mlb";
             } else if (name === "Juan Soto") {
                 jerseyColor = "#0C2340"; primaryColor = "#0C2340"; secondaryColor = "#FFFFFF"; skinColor = "#FFDBAC"; hairStyle = "short"; position = "OF"; jerseyNumber = "22";
+                espnId = "3892628"; sportSlug = "mlb";
             } else if (name === "Connor McDavid") {
                 jerseyColor = "#FF6600"; primaryColor = "#FF6600"; secondaryColor = "#00205B"; skinColor = "#FFDBAC"; hairStyle = "short"; position = "C"; jerseyNumber = "97";
+                espnId = "3114724"; sportSlug = "nhl";
             } else if (name === "Leon Draisaitl") {
                 jerseyColor = "#FF6600"; primaryColor = "#FF6600"; secondaryColor = "#00205B"; skinColor = "#FFDBAC"; hairStyle = "short"; position = "C"; jerseyNumber = "29";
+                espnId = "7992"; sportSlug = "nhl";
             }
 
             prop.teamColorPrimary = primaryColor;
@@ -1600,8 +1614,27 @@
             prop.oppColorSecondary = "#FFFFFF";
             prop.position = position;
             prop.jerseyNumber = jerseyNumber;
-            prop.playerHeadshot = generatePlayerHeadshotSVG(prop.playerName, jerseyColor, skinColor, hairStyle);
-            prop.teamLogo = generateTeamLogoSVG(prop.team, primaryColor, secondaryColor);
+
+            // Generate high-resolution headshot from ESPN combiner CDN with inline SVG fallback
+            const fallbackHeadshot = generatePlayerHeadshotSVG(prop.playerName, jerseyColor, skinColor, hairStyle);
+            if (espnId && sportSlug) {
+                const photoUrl = `https://a.espncdn.com/combiner/i?img=/i/headshots/${sportSlug}/players/full/${espnId}.png&w=120&h=90`;
+                prop.playerHeadshot = `
+                    <img src="${photoUrl}" alt="${prop.playerName}" class="w-full h-full object-cover rounded-full" 
+                         onerror="this.onerror=null; this.parentNode.innerHTML=\`${fallbackHeadshot.replace(/\n/g, ' ')}\`"/>
+                `;
+            } else {
+                prop.playerHeadshot = fallbackHeadshot;
+            }
+
+            // Generate Team Logo from ESPN teamlogo CDN with inline SVG fallback
+            const leagueLower = prop.league.toLowerCase();
+            const logoUrl = `https://a.espncdn.com/i/teamlogos/${leagueLower}/500/${prop.team.toLowerCase()}.png`;
+            const fallbackLogo = generateTeamLogoSVG(prop.team, primaryColor, secondaryColor);
+            prop.teamLogo = `
+                <img src="${logoUrl}" alt="${prop.team}" class="w-full h-full object-contain" 
+                     onerror="this.onerror=null; this.parentNode.innerHTML=\`${fallbackLogo.replace(/\n/g, ' ')}\`"/>
+            `;
             
             let oppColor = prop.oppColorPrimary;
             if (prop.opponent === "BOS") oppColor = "#007A33";
@@ -1609,7 +1642,13 @@
             else if (prop.opponent === "CHI") oppColor = "#41B6E6";
             else if (prop.opponent === "IND") oppColor = "#0C2340";
             else if (prop.opponent === "NYY") oppColor = "#0C2340";
-            prop.opponentTeamLogo = generateTeamLogoSVG(prop.opponent, oppColor, "#FFFFFF");
+
+            const oppLogoUrl = `https://a.espncdn.com/i/teamlogos/${leagueLower}/500/${prop.opponent.toLowerCase()}.png`;
+            const fallbackOpponentLogo = generateTeamLogoSVG(prop.opponent, oppColor, "#FFFFFF");
+            prop.opponentTeamLogo = `
+                <img src="${oppLogoUrl}" alt="${prop.opponent}" class="w-full h-full object-contain" 
+                     onerror="this.onerror=null; this.parentNode.innerHTML=\`${fallbackOpponentLogo.replace(/\n/g, ' ')}\`"/>
+            `;
 
             const dkLine = prop.sport === 'Basketball' ? (prop.line + 0.5) : prop.line;
             const fdLine = prop.sport === 'Basketball' ? (prop.line - 0.5) : prop.line;
