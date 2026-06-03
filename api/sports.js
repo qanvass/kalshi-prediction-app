@@ -77,8 +77,8 @@ function initializePropsRepo() {
         // NBA (Dallas Mavericks vs Boston Celtics)
         { providerPropId: 'pr_luka_pts', sport: 'Basketball', league: 'NBA', eventId: 'ev_nba_1', playerId: 'pl_luka', playerName: 'Luka Doncic', team: 'DAL', opponent: 'BOS', statType: 'Points', line: 32.5, overPrice: -110, underPrice: -110, isLive: false },
         { providerPropId: 'pr_luka_ast', sport: 'Basketball', league: 'NBA', eventId: 'ev_nba_1', playerId: 'pl_luka', playerName: 'Luka Doncic', team: 'DAL', opponent: 'BOS', statType: 'Assists', line: 8.5, overPrice: -115, underPrice: -105, isLive: false },
-        { providerPropId: 'pr_kyrie_pts', sport: 'Basketball', league: 'NBA', eventId: 'ev_nba_1', playerId: 'pl_kyrie', playerName: 'Kyrie Irving', team: 'DAL', opponent: 'BOS', statType: 'Points', line: 24.5, overPrice: -120, underPrice: 100, isLive: false },
-        { providerPropId: 'pr_kyrie_ast', sport: 'Basketball', league: 'NBA', eventId: 'ev_nba_1', playerId: 'pl_kyrie', playerName: 'Kyrie Irving', team: 'DAL', opponent: 'BOS', statType: 'Assists', line: 5.5, overPrice: -110, underPrice: -110, isLive: false },
+        { providerPropId: 'pr_kyrie_pts', sport: 'Basketball', league: 'NBA', eventId: 'ev_nba_1', playerId: 'pl_kyrie', playerName: 'Kyrie Irving', team: 'DAL', opponent: 'BOS', statType: 'Points', line: 24.5, overPrice: -120, underPrice: 100, isLive: false, status: 'suspended' },
+        { providerPropId: 'pr_kyrie_ast', sport: 'Basketball', league: 'NBA', eventId: 'ev_nba_1', playerId: 'pl_kyrie', playerName: 'Kyrie Irving', team: 'DAL', opponent: 'BOS', statType: 'Assists', line: 5.5, overPrice: -110, underPrice: -110, isLive: false, status: 'suspended' },
         { providerPropId: 'pr_tatum_pts', sport: 'Basketball', league: 'NBA', eventId: 'ev_nba_1', playerId: 'pl_tatum', playerName: 'Jayson Tatum', team: 'BOS', opponent: 'DAL', statType: 'Points', line: 27.5, overPrice: -105, underPrice: -115, isLive: true }, // Live Prop
         { providerPropId: 'pr_tatum_reb', sport: 'Basketball', league: 'NBA', eventId: 'ev_nba_1', playerId: 'pl_tatum', playerName: 'Jayson Tatum', team: 'BOS', opponent: 'DAL', statType: 'Rebounds', line: 9.5, overPrice: -110, underPrice: -110, isLive: false },
         { providerPropId: 'pr_brown_pts', sport: 'Basketball', league: 'NBA', eventId: 'ev_nba_1', playerId: 'pl_brown', playerName: 'Jaylen Brown', team: 'BOS', opponent: 'DAL', statType: 'Points', line: 23.5, overPrice: -110, underPrice: -110, isLive: false },
@@ -228,20 +228,12 @@ function generateAIPredictionForProp(prop) {
             reasonShort = 'Celtics switching defensive schemes leaves rolling options open.';
             reasonLong = 'The Celtics are expected to drop in screen coverage, forcing Luka to pass to rolling bigs like Lively. This supports assists exceeding 8.5.';
         }
-    } else if (prop.playerName === 'Kyrie Irving' && prop.statType === 'Points') {
-        proj = 22.1;
-        probUnder = 0.58;
-        lean = 'Less';
-        conf = 58;
-        reasonShort = 'Aggressive guard rotation blocks clean scoring lanes.';
-        reasonLong = 'Irving has faced increased double-team defensive pressure when sharing the court with Doncic in playoffs. Historically, this reduces scoring yield against the Celtics.';
-    } else if (prop.playerName === 'Kyrie Irving' && prop.statType === 'Assists') {
-        proj = 4.8;
-        probUnder = 0.63;
-        lean = 'Strong Less';
-        conf = 63;
-        reasonShort = 'Defense prioritizes cutting passing lanes to corners.';
-        reasonLong = 'Irving has shown fewer kick-outs to three-point shooters in this series. Defensive configurations highlight a focus on blocking corner distribution lanes.';
+    } else if (prop.playerName === 'Kyrie Irving') {
+        lean = 'Locked — Not Available';
+        conf = 0;
+        avoidReason = 'Kyrie Irving has been ruled OUT for tonight\'s game.';
+        reasonShort = 'Ruled OUT - Line Suspended';
+        reasonLong = 'Kyrie Irving is inactive for tonight\'s matchup. All related player prop lines are locked and suspended.';
     } else if (prop.playerName === 'Jayson Tatum' && prop.statType === 'Points') {
         proj = 29.4;
         probOver = 0.59;

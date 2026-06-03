@@ -64,13 +64,15 @@ const server = http.createServer((req, res) => {
         parsedUrl.pathname === '/KALSHI%20PREDICT%20v2.html' || parsedUrl.pathname === '/KALSHI PREDICT v2.html' || 
         parsedUrl.pathname === '/KALSHI%20PREDICT%20v3.html' || parsedUrl.pathname === '/KALSHI PREDICT v3.html' || 
         parsedUrl.pathname === '/KALSHI%20PREDICT%20v4.html' || parsedUrl.pathname === '/KALSHI PREDICT v4.html' ||
-        parsedUrl.pathname === '/KALSHI%20PREDICT%20v5.html' || parsedUrl.pathname === '/KALSHI PREDICT v5.html') {
+        parsedUrl.pathname === '/KALSHI%20PREDICT%20v5.html' || parsedUrl.pathname === '/KALSHI PREDICT v5.html' ||
+        parsedUrl.pathname === '/KALSHI%20PREDICT%20v6.html' || parsedUrl.pathname === '/KALSHI PREDICT v6.html') {
         
         let fileToServe = 'index.html';
         if (parsedUrl.pathname.includes('v2')) fileToServe = 'KALSHI PREDICT v2.html';
         else if (parsedUrl.pathname.includes('v3')) fileToServe = 'KALSHI PREDICT v3.html';
         else if (parsedUrl.pathname.includes('v4')) fileToServe = 'KALSHI PREDICT v4.html';
         else if (parsedUrl.pathname.includes('v5')) fileToServe = 'KALSHI PREDICT v5.html';
+        else if (parsedUrl.pathname.includes('v6')) fileToServe = 'KALSHI PREDICT v6.html';
 
         const filePath = path.join(__dirname, fileToServe);
         fs.readFile(filePath, 'utf8', (err, data) => {
