@@ -58,6 +58,38 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    // Serve static files (images, CSS, JS, etc.) if they exist in the root folder
+    const decodedPath = decodeURIComponent(parsedUrl.pathname);
+    const staticFilePath = path.join(__dirname, decodedPath);
+    const ext = path.extname(staticFilePath).toLowerCase();
+    
+    if (ext && fs.existsSync(staticFilePath) && fs.statSync(staticFilePath).isFile()) {
+        const mimeTypes = {
+            '.html': 'text/html',
+            '.css': 'text/css',
+            '.js': 'application/javascript',
+            '.json': 'application/json',
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.svg': 'image/svg+xml',
+            '.gif': 'image/gif',
+            '.ico': 'image/x-icon'
+        };
+        const contentType = mimeTypes[ext] || 'application/octet-stream';
+        
+        fs.readFile(staticFilePath, (err, data) => {
+            if (err) {
+                res.writeHead(500, { 'Content-Type': 'text/plain' });
+                res.end('Error loading static file');
+                return;
+            }
+            res.writeHead(200, { 'Content-Type': contentType });
+            res.end(data);
+        });
+        return;
+    }
+
     // Serve KALSHI PREDICT html files
     if (parsedUrl.pathname === '/' || parsedUrl.pathname === '/index.html' || 
         parsedUrl.pathname === '/KALSHI%20PREDICT.html' || parsedUrl.pathname === '/KALSHI PREDICT.html' || 
